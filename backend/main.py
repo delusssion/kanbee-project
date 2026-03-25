@@ -1,14 +1,24 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+import storage
 from routers import tasks
 
-app = FastAPI(title='KanBee API')
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    storage.init_db()
+    yield
+
+
+app = FastAPI(title='KanBee API', lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=['null'],
-    allow_origin_regex=r'^http://localhost(:\\d+)?$',
+    allow_origin_regex=r'^http://localhost(:\d+)?$',
     allow_credentials=True,
     allow_methods=['*'],
     allow_headers=['*'],

@@ -1,5 +1,17 @@
+// ── API ────────────────────────────────────────────────────────────
+const API_BASE = 'http://localhost:8000';
+
+async function api(method, path, body = null) {
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  if (body !== null) opts.body = JSON.stringify(body);
+  const res = await fetch(API_BASE + path, opts);
+  if (!res.ok) throw new Error(await res.text());
+  if (res.status === 204) return null;
+  return res.json();
+}
+
 // ── State ──────────────────────────────────────────────────────────
-let tasks = loadTasks();
+let tasks = [];
 let dragSrcId = null;
 let lang = 'en';
 let currentView = 'kanban';
@@ -7,11 +19,10 @@ let userName = localStorage.getItem('kb_user_name') || '';
 let defaultView = localStorage.getItem('kb_default_view') || 'kanban';
 
 // ── Init ───────────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   initTheme();
   initLang();
   applyDefaultView();
-  render();
   bindNav();
   bindModal();
   bindTracker();
@@ -20,7 +31,13 @@ document.addEventListener('DOMContentLoaded', () => {
   bindProfileDropdown();
   bindSettings();
   bindConfirm();
+  await refreshTasks();
 });
+
+async function refreshTasks() {
+  tasks = await api('GET', '/tasks');
+  render();
+}
 
 // ── Translations ───────────────────────────────────────────────────
 const TRANSLATIONS = {
@@ -162,7 +179,6 @@ function applyLang() {
   document.querySelectorAll('[data-i18n-ph]').forEach(el => {
     el.placeholder = t(el.dataset.i18nPh);
   });
-  // Update dynamic header text
   document.getElementById('view-title').textContent =
     t(currentView === 'kanban' ? 'nav-kanban' : 'nav-tracker');
   document.getElementById('view-subtitle').textContent =
@@ -221,20 +237,6 @@ function bindDateAutoAdvance() {
   const year  = document.getElementById('task-due-year');
   day.addEventListener('input', () => { if (day.value.length >= 2) month.focus(); });
   month.addEventListener('input', () => { if (month.value.length >= 2) year.focus(); });
-}
-
-// ── Storage ────────────────────────────────────────────────────────
-function loadTasks() {
-  try { return JSON.parse(localStorage.getItem('kb_tasks')) || []; }
-  catch { return []; }
-}
-
-function saveTasks() {
-  localStorage.setItem('kb_tasks', JSON.stringify(tasks));
-}
-
-function genId() {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 }
 
 // ── Render ─────────────────────────────────────────────────────────
@@ -328,14 +330,15 @@ function bindDrop(list, status) {
     list.classList.add('drag-over');
   });
   list.addEventListener('dragleave', () => list.classList.remove('drag-over'));
-  list.addEventListener('drop', e => {
+  list.addEventListener('drop', async e => {
     e.preventDefault();
     list.classList.remove('drag-over');
     if (dragSrcId) {
       const task = tasks.find(t => t.id === dragSrcId);
       if (task && task.status !== status) {
-        task.status = status;
-        saveTasks();
+        const updated = await api('PATCH', `/tasks/${task.id}`, { status });
+        const idx = tasks.findIndex(t => t.id === task.id);
+        if (idx !== -1) tasks[idx] = updated;
         render();
       }
     }
@@ -509,7 +512,7 @@ function bindModal() {
     });
   });
 
-  document.getElementById('task-form').addEventListener('submit', e => {
+  document.getElementById('task-form').addEventListener('submit', async e => {
     e.preventDefault();
     const id = document.getElementById('task-id').value;
     const data = {
@@ -522,21 +525,22 @@ function bindModal() {
     if (!data.title) return;
 
     if (id) {
-      const task = tasks.find(t => t.id === id);
-      if (task) Object.assign(task, data);
+      const updated = await api('PATCH', `/tasks/${id}`, data);
+      const idx = tasks.findIndex(t => t.id === id);
+      if (idx !== -1) tasks[idx] = updated;
     } else {
-      tasks.push({ id: genId(), ...data });
+      const created = await api('POST', '/tasks', data);
+      tasks.push(created);
     }
 
-    saveTasks();
     render();
     closeModal();
   });
 
   document.getElementById('clear-all-btn').addEventListener('click', () => {
-    showConfirm(t('settings-confirm-clear'), () => {
+    showConfirm(t('settings-confirm-clear'), async () => {
+      await Promise.all(tasks.map(t => api('DELETE', `/tasks/${t.id}`)));
       tasks = [];
-      saveTasks();
       render();
     });
   });
@@ -565,9 +569,9 @@ function bindNav() {
 }
 
 // ── Task actions ───────────────────────────────────────────────────
-function deleteTask(id) {
+async function deleteTask(id) {
+  await api('DELETE', `/tasks/${id}`);
   tasks = tasks.filter(t => t.id !== id);
-  saveTasks();
   render();
 }
 
@@ -626,18 +630,15 @@ function closeSettings() {
 }
 
 function syncSettingsUI() {
-  // Language seg
   document.querySelectorAll('#lang-seg .settings-seg-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.lang === lang);
   });
 
-  // Theme seg
   const currentTheme = document.documentElement.dataset.theme;
   document.querySelectorAll('#theme-seg .settings-seg-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.themeVal === currentTheme);
   });
 
-  // Default view seg
   document.querySelectorAll('#defview-seg .settings-seg-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.defview === defaultView);
   });
@@ -649,7 +650,6 @@ function bindSettings() {
     if (e.target === e.currentTarget) closeSettings();
   });
 
-  // Language seg
   document.querySelectorAll('#lang-seg .settings-seg-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       lang = btn.dataset.lang;
@@ -660,7 +660,6 @@ function bindSettings() {
     });
   });
 
-  // Theme seg
   document.querySelectorAll('#theme-seg .settings-seg-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const theme = btn.dataset.themeVal;
@@ -672,7 +671,6 @@ function bindSettings() {
     });
   });
 
-  // Default view seg
   document.querySelectorAll('#defview-seg .settings-seg-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       defaultView = btn.dataset.defview;
@@ -682,7 +680,6 @@ function bindSettings() {
       });
     });
   });
-
 }
 
 // ── Profile UI ──────────────────────────────────────────────────────
@@ -730,16 +727,13 @@ function bindProfileDropdown() {
     signinView.style.display = 'none';
   }
 
-  // Sign in / Sign out
   document.getElementById('dropdown-auth-btn').addEventListener('click', () => {
     if (userName) {
-      // Sign out
       userName = '';
       localStorage.removeItem('kb_user_name');
       updateProfileUI();
       area.classList.remove('open');
     } else {
-      // Show sign-in form
       mainView.style.display = 'none';
       signinView.style.display = '';
       nameInput.value = '';
@@ -761,7 +755,6 @@ function bindProfileDropdown() {
   nameInput.addEventListener('keydown', e => { if (e.key === 'Enter') doSignIn(); });
   document.getElementById('dropdown-signin-cancel').addEventListener('click', showMainView);
 
-  // Open settings
   document.getElementById('dropdown-open-settings').addEventListener('click', () => {
     area.classList.remove('open');
     openSettings();
