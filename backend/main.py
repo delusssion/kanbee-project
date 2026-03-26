@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 import storage
-from routers import tasks
+from routers import settings, tasks
 
 
 @asynccontextmanager
@@ -31,3 +31,4 @@ def health():
 
 
 app.include_router(tasks.router)
+app.include_router(settings.router)

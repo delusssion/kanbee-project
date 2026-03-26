@@ -49,6 +49,15 @@ def init_db():
                     due         TEXT
                 )
             """)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS settings (
+                    session_id   TEXT PRIMARY KEY,
+                    lang         TEXT NOT NULL DEFAULT 'en',
+                    theme        TEXT NOT NULL DEFAULT 'light',
+                    default_view TEXT NOT NULL DEFAULT 'kanban',
+                    user_name    TEXT
+                )
+            """)
 
 
 def _row_to_task(row: dict) -> Task:
@@ -114,3 +123,35 @@ def delete_task(task_id: str) -> bool:
         with conn.cursor() as cur:
             cur.execute('DELETE FROM tasks WHERE id = %s', (task_id,))
             return cur.rowcount > 0
+
+
+# ── Settings ───────────────────────────────────────────────────────
+
+def get_or_create_settings(session_id: str) -> dict:
+    with _conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute('SELECT * FROM settings WHERE session_id = %s', (session_id,))
+            row = cur.fetchone()
+            if row is None:
+                cur.execute(
+                    """INSERT INTO settings (session_id) VALUES (%s)
+                       RETURNING *""",
+                    (session_id,),
+                )
+                row = cur.fetchone()
+    return dict(row)
+
+
+def update_settings(session_id: str, data: dict) -> dict:
+    if not data:
+        return get_or_create_settings(session_id)
+    set_clause = ', '.join(f'{k} = %s' for k in data)
+    values = list(data.values()) + [session_id]
+    with _conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                f'UPDATE settings SET {set_clause} WHERE session_id = %s RETURNING *',
+                values,
+            )
+            row = cur.fetchone()
+    return dict(row) if row else get_or_create_settings(session_id)

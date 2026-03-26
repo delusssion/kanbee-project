@@ -2,7 +2,11 @@
 const API_BASE = 'http://localhost:8000';
 
 async function api(method, path, body = null) {
-  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  const opts = {
+    method,
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+  };
   if (body !== null) opts.body = JSON.stringify(body);
   const res = await fetch(API_BASE + path, opts);
   if (!res.ok) throw new Error(await res.text());
@@ -15,13 +19,12 @@ let tasks = [];
 let dragSrcId = null;
 let lang = 'en';
 let currentView = 'kanban';
-let userName = localStorage.getItem('kb_user_name') || '';
-let defaultView = localStorage.getItem('kb_default_view') || 'kanban';
+let userName = '';
+let defaultView = 'kanban';
 
 // ── Init ───────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
-  initTheme();
-  initLang();
+  await loadSettings();
   applyDefaultView();
   bindNav();
   bindModal();
@@ -33,6 +36,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   bindConfirm();
   await refreshTasks();
 });
+
+async function loadSettings() {
+  const s = await api('GET', '/settings');
+  lang        = s.lang         || 'en';
+  defaultView = s.default_view || 'kanban';
+  userName    = s.user_name    || '';
+  document.documentElement.dataset.theme = s.theme || 'light';
+  applyLang();
+}
 
 async function refreshTasks() {
   tasks = await api('GET', '/tasks');
@@ -166,11 +178,6 @@ function t(key) {
 }
 
 // ── Language ───────────────────────────────────────────────────────
-function initLang() {
-  lang = localStorage.getItem('kb_lang') || 'en';
-  applyLang();
-}
-
 function applyLang() {
   document.documentElement.lang = lang;
   document.querySelectorAll('[data-i18n]').forEach(el => {
@@ -184,12 +191,6 @@ function applyLang() {
   document.getElementById('view-subtitle').textContent =
     t(currentView === 'kanban' ? 'subtitle-kanban' : 'subtitle-tracker');
   updateProfileUI();
-}
-
-// ── Theme ──────────────────────────────────────────────────────────
-function initTheme() {
-  const saved = localStorage.getItem('kb_theme') || 'light';
-  document.documentElement.dataset.theme = saved;
 }
 
 // ── Segmented group helpers ─────────────────────────────────────────
@@ -651,9 +652,9 @@ function bindSettings() {
   });
 
   document.querySelectorAll('#lang-seg .settings-seg-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
       lang = btn.dataset.lang;
-      localStorage.setItem('kb_lang', lang);
+      await api('PATCH', '/settings', { lang });
       applyLang();
       render();
       syncSettingsUI();
@@ -661,10 +662,10 @@ function bindSettings() {
   });
 
   document.querySelectorAll('#theme-seg .settings-seg-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
       const theme = btn.dataset.themeVal;
       document.documentElement.dataset.theme = theme;
-      localStorage.setItem('kb_theme', theme);
+      await api('PATCH', '/settings', { theme });
       document.querySelectorAll('#theme-seg .settings-seg-btn').forEach(b => {
         b.classList.toggle('active', b === btn);
       });
@@ -672,9 +673,9 @@ function bindSettings() {
   });
 
   document.querySelectorAll('#defview-seg .settings-seg-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
       defaultView = btn.dataset.defview;
-      localStorage.setItem('kb_default_view', defaultView);
+      await api('PATCH', '/settings', { default_view: defaultView });
       document.querySelectorAll('#defview-seg .settings-seg-btn').forEach(b => {
         b.classList.toggle('active', b === btn);
       });
@@ -727,10 +728,10 @@ function bindProfileDropdown() {
     signinView.style.display = 'none';
   }
 
-  document.getElementById('dropdown-auth-btn').addEventListener('click', () => {
+  document.getElementById('dropdown-auth-btn').addEventListener('click', async () => {
     if (userName) {
       userName = '';
-      localStorage.removeItem('kb_user_name');
+      await api('PATCH', '/settings', { user_name: null });
       updateProfileUI();
       area.classList.remove('open');
     } else {
@@ -741,11 +742,11 @@ function bindProfileDropdown() {
     }
   });
 
-  function doSignIn() {
+  async function doSignIn() {
     const name = nameInput.value.trim();
     if (!name) return;
     userName = name;
-    localStorage.setItem('kb_user_name', userName);
+    await api('PATCH', '/settings', { user_name: userName });
     updateProfileUI();
     area.classList.remove('open');
     showMainView();
