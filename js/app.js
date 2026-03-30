@@ -9,7 +9,12 @@ async function api(method, path, body = null) {
   };
   if (body !== null) opts.body = JSON.stringify(body);
   const res = await fetch(API_BASE + path, opts);
-  if (!res.ok) throw new Error(await res.text());
+  if (!res.ok) {
+    const text = await res.text();
+    const err = new Error(text);
+    err.status = res.status;
+    throw err;
+  }
   if (res.status === 204) return null;
   return res.json();
 }
@@ -24,6 +29,24 @@ let defaultView = 'kanban';
 
 // ── Init ───────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
+  bindAuth();
+  const user = await checkAuth();
+  if (!user) return;
+  await initApp();
+});
+
+async function checkAuth() {
+  try {
+    const user = await api('GET', '/auth/me');
+    userName = user.username;
+    return user;
+  } catch {
+    showAuthModal();
+    return null;
+  }
+}
+
+async function initApp() {
   await loadSettings();
   applyDefaultView();
   bindNav();
@@ -35,15 +58,108 @@ document.addEventListener('DOMContentLoaded', async () => {
   bindSettings();
   bindConfirm();
   await refreshTasks();
-});
+}
 
 async function loadSettings() {
   const s = await api('GET', '/settings');
   lang        = s.lang         || 'en';
   defaultView = s.default_view || 'kanban';
-  userName    = s.user_name    || '';
-  document.documentElement.dataset.theme = s.theme || 'light';
+  document.documentElement.dataset.theme = s.theme || 'dark';
   applyLang();
+}
+
+// ── Auth Modal ─────────────────────────────────────────────────────
+function showAuthModal() {
+  document.getElementById('auth-overlay').classList.remove('hidden');
+}
+
+function hideAuthModal() {
+  document.getElementById('auth-overlay').classList.add('hidden');
+}
+
+function bindAuth() {
+  // Generate floating particles
+  const particlesEl = document.getElementById('auth-particles');
+  for (let i = 0; i < 28; i++) {
+    const p = document.createElement('div');
+    p.className = 'auth-particle';
+    p.style.cssText = `
+      left:${Math.random() * 100}%;
+      bottom:${Math.random() * 30}%;
+      --dur:${4 + Math.random() * 6}s;
+      --delay:${Math.random() * 6}s;
+      width:${2 + Math.random() * 3}px;
+      height:${2 + Math.random() * 3}px;
+    `;
+    particlesEl.appendChild(p);
+  }
+
+  const form        = document.getElementById('auth-form');
+  const tabLogin    = document.getElementById('auth-tab-login');
+  const tabReg      = document.getElementById('auth-tab-register');
+  const submitBtn   = document.getElementById('auth-submit');
+  const errorEl     = document.getElementById('auth-error');
+  const usernameEl  = document.getElementById('auth-username');
+  const passwordEl  = document.getElementById('auth-password');
+  const confirmWrap = document.getElementById('auth-confirm-wrap');
+  const confirmEl   = document.getElementById('auth-confirm');
+
+  let mode = 'login';
+
+  function setMode(m) {
+    mode = m;
+    tabLogin.classList.toggle('active', m === 'login');
+    tabReg.classList.toggle('active', m === 'register');
+    submitBtn.textContent    = m === 'login' ? 'Войти →' : 'Зарегистрироваться →';
+    confirmWrap.style.display = m === 'register' ? '' : 'none';
+    if (m === 'register') confirmEl.required = true;
+    else                  confirmEl.required = false;
+    passwordEl.placeholder = m === 'login' ? 'Введите пароль' : 'Минимум 8 символов';
+    errorEl.textContent = '';
+    form.reset();
+  }
+
+  tabLogin.addEventListener('click', () => setMode('login'));
+  tabReg.addEventListener('click',   () => setMode('register'));
+
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    errorEl.textContent = '';
+    const username = usernameEl.value.trim();
+    const password = passwordEl.value;
+
+    if (mode === 'register') {
+      if (username.length < 5) {
+        errorEl.textContent = 'Логин должен содержать минимум 5 символов'; return;
+      }
+      if (password.length < 8) {
+        errorEl.textContent = 'Пароль должен содержать минимум 8 символов'; return;
+      }
+      if (!/[a-zA-Zа-яА-Я]/.test(password)) {
+        errorEl.textContent = 'Пароль должен содержать хотя бы одну букву'; return;
+      }
+      if (!/\d/.test(password)) {
+        errorEl.textContent = 'Пароль должен содержать хотя бы одну цифру'; return;
+      }
+      if (password !== confirmEl.value) {
+        errorEl.textContent = 'Пароли не совпадают'; return;
+      }
+    }
+
+    try {
+      const path = mode === 'login' ? '/auth/login' : '/auth/register';
+      const user = await api('POST', path, { username, password });
+      userName = user.username;
+      hideAuthModal();
+      await initApp();
+    } catch (err) {
+      try {
+        errorEl.textContent = JSON.parse(err.message).detail || 'Ошибка';
+      } catch {
+        errorEl.textContent = err.message || 'Ошибка';
+      }
+    }
+  });
 }
 
 async function refreshTasks() {
@@ -75,6 +191,10 @@ const TRANSLATIONS = {
     'settings-save':          'Save',
     'settings-name-ph':       'Your name',
     'settings-confirm-clear': 'Delete all tasks? This cannot be undone.',
+    'settings-change-pwd':     'Change password',
+    'settings-pwd-current-ph': 'Current password',
+    'settings-pwd-new-ph':     'New password (8+ chars, letter + digit)',
+    'settings-pwd-success':    'Password changed',
     'nav-kanban':          'Kanban Board',
     'nav-tracker':         'Task Tracker',
     'subtitle-kanban':     'Drag cards between columns to update status',
@@ -134,6 +254,10 @@ const TRANSLATIONS = {
     'settings-save':          'Сохранить',
     'settings-name-ph':       'Ваше имя',
     'settings-confirm-clear': 'Удалить все задачи? Это необратимо.',
+    'settings-change-pwd':     'Сменить пароль',
+    'settings-pwd-current-ph': 'Текущий пароль',
+    'settings-pwd-new-ph':     'Новый пароль (8+ симв., буква и цифра)',
+    'settings-pwd-success':    'Пароль изменён',
     'nav-kanban':          'Канбан-доска',
     'nav-tracker':         'Трекер задач',
     'subtitle-kanban':     'Перетащите карточки между колонками для смены статуса',
@@ -623,6 +747,12 @@ function applyDefaultView() {
 // ── Settings ────────────────────────────────────────────────────────
 function openSettings() {
   syncSettingsUI();
+  document.getElementById('settings-user-name').textContent = userName;
+  document.getElementById('settings-user-avatar').textContent = userName ? userName[0].toUpperCase() : '';
+  document.getElementById('settings-pwd-form').classList.remove('open');
+  document.getElementById('settings-pwd-current').value = '';
+  document.getElementById('settings-pwd-new').value = '';
+  document.getElementById('settings-pwd-error').textContent = '';
   document.getElementById('settings-overlay').classList.add('open');
 }
 
@@ -681,25 +811,47 @@ function bindSettings() {
       });
     });
   });
+
+  // Change password
+  document.getElementById('settings-pwd-btn').addEventListener('click', () => {
+    document.getElementById('settings-pwd-form').classList.toggle('open');
+  });
+  document.getElementById('settings-pwd-cancel').addEventListener('click', () => {
+    document.getElementById('settings-pwd-form').classList.remove('open');
+    document.getElementById('settings-pwd-error').textContent = '';
+  });
+  document.getElementById('settings-pwd-save').addEventListener('click', async () => {
+    const current = document.getElementById('settings-pwd-current').value;
+    const next    = document.getElementById('settings-pwd-new').value;
+    const errEl   = document.getElementById('settings-pwd-error');
+    errEl.style.color = '';
+    errEl.textContent = '';
+    if (!current || !next) { errEl.textContent = 'Заполните оба поля'; return; }
+    try {
+      await api('POST', '/auth/change-password', { current_password: current, new_password: next });
+      errEl.style.color = 'var(--done)';
+      errEl.textContent = t('settings-pwd-success');
+      setTimeout(() => {
+        document.getElementById('settings-pwd-form').classList.remove('open');
+        errEl.textContent = ''; errEl.style.color = '';
+      }, 1500);
+    } catch (err) {
+      try { errEl.textContent = JSON.parse(err.message).detail || 'Ошибка'; }
+      catch { errEl.textContent = err.message || 'Ошибка'; }
+    }
+  });
 }
 
 // ── Profile UI ──────────────────────────────────────────────────────
 function updateProfileUI() {
-  const nameEl   = document.getElementById('profile-name');
-  const avatarEl = document.getElementById('profile-avatar');
+  const nameEl    = document.getElementById('profile-name');
+  const avatarEl  = document.getElementById('profile-avatar');
   const authLabel = document.getElementById('dropdown-auth-label');
 
-  if (userName) {
-    nameEl.textContent = userName;
-    avatarEl.innerHTML = userName[0].toUpperCase();
-    avatarEl.classList.add('has-name');
-    if (authLabel) authLabel.textContent = t('signout');
-  } else {
-    nameEl.textContent = t('settings-guest');
-    avatarEl.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>`;
-    avatarEl.classList.remove('has-name');
-    if (authLabel) authLabel.textContent = t('signin');
-  }
+  nameEl.textContent = userName;
+  avatarEl.innerHTML = userName[0].toUpperCase();
+  avatarEl.classList.add('has-name');
+  if (authLabel) authLabel.textContent = t('signout');
 }
 
 // ── Profile Dropdown ────────────────────────────────────────────────
@@ -707,54 +859,24 @@ function bindProfileDropdown() {
   const area     = document.getElementById('profile-area');
   const btn      = document.getElementById('profile-btn');
   const dropdown = document.getElementById('profile-dropdown');
-  const mainView   = document.getElementById('dropdown-main-view');
-  const signinView = document.getElementById('dropdown-signin-view');
-  const nameInput  = document.getElementById('dropdown-name-input');
 
   updateProfileUI();
 
   btn.addEventListener('click', e => {
     e.stopPropagation();
-    const isOpen = area.classList.contains('open');
-    area.classList.toggle('open', !isOpen);
-    if (!isOpen) showMainView();
+    area.classList.toggle('open');
   });
 
   document.addEventListener('click', () => area.classList.remove('open'));
   dropdown.addEventListener('click', e => e.stopPropagation());
 
-  function showMainView() {
-    mainView.style.display = '';
-    signinView.style.display = 'none';
-  }
-
   document.getElementById('dropdown-auth-btn').addEventListener('click', async () => {
-    if (userName) {
-      userName = '';
-      await api('PATCH', '/settings', { user_name: null });
-      updateProfileUI();
-      area.classList.remove('open');
-    } else {
-      mainView.style.display = 'none';
-      signinView.style.display = '';
-      nameInput.value = '';
-      nameInput.focus();
-    }
-  });
-
-  async function doSignIn() {
-    const name = nameInput.value.trim();
-    if (!name) return;
-    userName = name;
-    await api('PATCH', '/settings', { user_name: userName });
-    updateProfileUI();
+    await api('POST', '/auth/logout');
+    userName = '';
+    tasks = [];
     area.classList.remove('open');
-    showMainView();
-  }
-
-  document.getElementById('dropdown-signin-save').addEventListener('click', doSignIn);
-  nameInput.addEventListener('keydown', e => { if (e.key === 'Enter') doSignIn(); });
-  document.getElementById('dropdown-signin-cancel').addEventListener('click', showMainView);
+    showAuthModal();
+  });
 
   document.getElementById('dropdown-open-settings').addEventListener('click', () => {
     area.classList.remove('open');

@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 import storage
-from routers import settings, tasks
+from routers import auth, settings, tasks
 
 
 @asynccontextmanager
@@ -30,5 +30,6 @@ def health():
     return {'status': 'ok'}
 
 
+app.include_router(auth.router)
 app.include_router(tasks.router)
 app.include_router(settings.router)

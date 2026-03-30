@@ -1,49 +1,30 @@
 from typing import Optional
-from uuid import uuid4
 
-from fastapi import APIRouter, Cookie, Response
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
 import storage
+from auth_utils import get_current_user_id
 
 router = APIRouter(prefix='/settings', tags=['settings'])
-
-SESSION_COOKIE = 'kanbee_session'
 
 
 class SettingsUpdate(BaseModel):
     lang: Optional[str] = None
     theme: Optional[str] = None
     default_view: Optional[str] = None
-    user_name: Optional[str] = None
-
-
-def _ensure_session(response: Response, session_id: Optional[str]) -> str:
-    if not session_id:
-        session_id = uuid4().hex
-        response.set_cookie(SESSION_COOKIE, session_id, samesite='lax', httponly=False)
-    return session_id
 
 
 @router.get('')
-def get_settings(
-    response: Response,
-    kanbee_session: Optional[str] = Cookie(default=None),
-):
-    session_id = _ensure_session(response, kanbee_session)
-    data = storage.get_or_create_settings(session_id)
-    data.pop('session_id', None)
+def get_settings(user_id: str = Depends(get_current_user_id)):
+    data = storage.get_or_create_user_settings(user_id)
+    data.pop('user_id', None)
     return data
 
 
 @router.patch('')
-def patch_settings(
-    payload: SettingsUpdate,
-    response: Response,
-    kanbee_session: Optional[str] = Cookie(default=None),
-):
-    session_id = _ensure_session(response, kanbee_session)
+def patch_settings(payload: SettingsUpdate, user_id: str = Depends(get_current_user_id)):
     updates = payload.model_dump(exclude_unset=True)
-    data = storage.update_settings(session_id, updates)
-    data.pop('session_id', None)
+    data = storage.update_user_settings(user_id, updates)
+    data.pop('user_id', None)
     return data

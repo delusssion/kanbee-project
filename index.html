@@ -1,16 +1,46 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>KanBee</title>
   <link rel="stylesheet" href="css/styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Lora:wght@600;700&display=swap" rel="stylesheet">
 </head>
 <body>
 
   <aside class="sidebar">
     <div class="sidebar-logo">
-      <span class="logo-text">KanBee</span>
+      <!-- Bee SVG -->
+      <svg class="logo-bee-svg" viewBox="0 0 40 46" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Upper wings -->
+        <ellipse cx="7"  cy="20" rx="8.5" ry="4.5" fill="#E8C050" fill-opacity="0.82" transform="rotate(-28 7 20)"/>
+        <ellipse cx="33" cy="20" rx="8.5" ry="4.5" fill="#E8C050" fill-opacity="0.82" transform="rotate(28 33 20)"/>
+        <!-- Lower wings -->
+        <ellipse cx="8"  cy="27" rx="6"   ry="3.2" fill="#E8C050" fill-opacity="0.55" transform="rotate(-12 8 27)"/>
+        <ellipse cx="32" cy="27" rx="6"   ry="3.2" fill="#E8C050" fill-opacity="0.55" transform="rotate(12 32 27)"/>
+        <!-- Antennae -->
+        <path d="M16 12 Q13 7 10 3" stroke="#6B3F06" stroke-width="1.6" stroke-linecap="round" fill="none"/>
+        <circle cx="9.5" cy="2.5" r="2" fill="#6B3F06"/>
+        <path d="M24 12 Q27 7 30 3" stroke="#6B3F06" stroke-width="1.6" stroke-linecap="round" fill="none"/>
+        <circle cx="30.5" cy="2.5" r="2" fill="#6B3F06"/>
+        <!-- Head -->
+        <ellipse cx="20" cy="13.5" rx="6.5" ry="6" fill="#C9820A"/>
+        <!-- Eyes -->
+        <circle cx="17" cy="12.5" r="1.5" fill="#3D2000"/>
+        <circle cx="23" cy="12.5" r="1.5" fill="#3D2000"/>
+        <!-- Body -->
+        <ellipse cx="20" cy="30" rx="10" ry="12" fill="#D4920A"/>
+        <!-- Stripe 1 -->
+        <path d="M10.5 25.5 Q20 23.5 29.5 25.5 L29 28 Q20 26 11 28 Z" fill="#5A3006"/>
+        <!-- Stripe 2 -->
+        <path d="M10 31.5 Q20 29.5 30 31.5 L29.5 34 Q20 32 10.5 34 Z" fill="#5A3006"/>
+        <!-- Stinger -->
+        <path d="M17.5 41.5 L20 45.5 L22.5 41.5 Z" fill="#5A3006"/>
+      </svg>
+      <!-- Text -->
+      <span class="logo-text"><span class="logo-kan">Kan</span><span class="logo-bee-word">Bee</span></span>
     </div>
     <!-- Profile -->
     <div class="profile-area" id="profile-area">
@@ -304,6 +334,28 @@
         <button class="settings-close" id="settings-close">&times;</button>
       </div>
 
+      <!-- Profile -->
+      <div class="settings-section">
+        <div class="settings-section-label" data-i18n="settings-account">Account</div>
+        <div class="settings-user-row">
+          <div class="settings-user-avatar" id="settings-user-avatar"></div>
+          <div class="settings-user-info">
+            <div class="settings-user-name" id="settings-user-name"></div>
+            <div class="settings-user-label" data-i18n="settings-local-profile">Local profile</div>
+          </div>
+          <button class="btn btn-ghost btn-sm" id="settings-pwd-btn" data-i18n="settings-change-pwd">Change password</button>
+        </div>
+        <div class="settings-pwd-form" id="settings-pwd-form">
+          <input class="settings-input" type="password" id="settings-pwd-current" placeholder="Current password" data-i18n-ph="settings-pwd-current-ph" />
+          <input class="settings-input" type="password" id="settings-pwd-new" placeholder="New password" data-i18n-ph="settings-pwd-new-ph" />
+          <p class="settings-pwd-error" id="settings-pwd-error"></p>
+          <div class="settings-pwd-actions">
+            <button class="btn btn-ghost btn-sm" id="settings-pwd-cancel" data-i18n="btn-cancel">Cancel</button>
+            <button class="btn btn-primary btn-sm" id="settings-pwd-save" data-i18n="settings-save">Save</button>
+          </div>
+        </div>
+      </div>
+
       <!-- Appearance -->
       <div class="settings-section">
         <div class="settings-section-label" data-i18n="settings-appearance">Appearance</div>
@@ -351,6 +403,107 @@
         <button class="btn btn-danger" id="confirm-ok-btn" data-i18n="confirm-delete">Delete</button>
       </div>
     </div>
+  </div>
+
+  <!-- Auth Overlay -->
+  <div class="auth-overlay hidden" id="auth-overlay">
+
+    <!-- Left decorative panel -->
+    <div class="auth-panel-left">
+      <div class="auth-orb auth-orb-1"></div>
+      <div class="auth-orb auth-orb-2"></div>
+      <div class="auth-orb auth-orb-3"></div>
+      <div class="auth-particles" id="auth-particles"></div>
+
+      <!-- Mini board preview -->
+      <div class="auth-bp">
+        <div class="auth-bp-header">
+          <span class="auth-bp-logo">KanBee</span>
+          <div style="display:flex;gap:6px;margin-left:auto">
+            <div class="auth-bp-dot2"></div>
+            <div class="auth-bp-dot"></div>
+          </div>
+        </div>
+        <div class="auth-bp-body">
+          <div>
+            <div class="auth-bp-col-head auth-col-todo"><span></span>To Do</div>
+            <div class="auth-bp-card">
+              <div class="auth-bp-card-title">Дизайн главной</div>
+              <span class="auth-bp-badge auth-badge-high">▲ High</span>
+            </div>
+            <div class="auth-bp-card">
+              <div class="auth-bp-card-title">API контракты</div>
+              <span class="auth-bp-badge auth-badge-med">● Med</span>
+            </div>
+          </div>
+          <div>
+            <div class="auth-bp-col-head auth-col-inp"><span></span>In Process</div>
+            <div class="auth-bp-card auth-bp-card-active">
+              <div class="auth-bp-card-title">Авторизация</div>
+              <span class="auth-bp-badge auth-badge-high">▲ High</span>
+            </div>
+            <div class="auth-bp-card">
+              <div class="auth-bp-card-title">Тёмная тема</div>
+              <span class="auth-bp-badge auth-badge-low">▼ Low</span>
+            </div>
+          </div>
+          <div>
+            <div class="auth-bp-col-head auth-col-done"><span></span>Done</div>
+            <div class="auth-bp-card auth-bp-card-done">
+              <div class="auth-bp-card-title">Kanban Board</div>
+              <span class="auth-bp-badge auth-badge-low">▼ Low</span>
+            </div>
+            <div class="auth-bp-card auth-bp-card-done">
+              <div class="auth-bp-card-title">DnD карточки</div>
+              <span class="auth-bp-badge auth-badge-med">● Med</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tagline -->
+      <div class="auth-tagline">
+        <h1>Управляй задачами<br/><em>проще и быстрее</em></h1>
+        <p>Канбан-доска и трекер задач для твоей команды.<br/>Создай аккаунт и начни работу за 30 секунд.</p>
+      </div>
+    </div>
+
+    <!-- Right form panel -->
+    <div class="auth-panel-right">
+      <div class="auth-form-card">
+
+        <div class="auth-brand">
+          <span class="auth-brand-name">KanBee</span>
+        </div>
+
+        <div class="auth-tabs">
+          <button class="auth-tab active" id="auth-tab-login">Войти</button>
+          <button class="auth-tab" id="auth-tab-register">Регистрация</button>
+        </div>
+
+        <form id="auth-form">
+          <div class="auth-field">
+            <label class="auth-field-label">Логин</label>
+            <input class="auth-field-input" id="auth-username" type="text"
+              placeholder="Минимум 5 символов" autocomplete="username" required />
+          </div>
+          <div class="auth-field">
+            <label class="auth-field-label">Пароль</label>
+            <input class="auth-field-input" id="auth-password" type="password"
+              placeholder="Введите пароль" autocomplete="current-password" required />
+          </div>
+          <div class="auth-field" id="auth-confirm-wrap" style="display:none">
+            <label class="auth-field-label">Подтвердить пароль</label>
+            <input class="auth-field-input" id="auth-confirm" type="password"
+              placeholder="Повторите пароль" />
+          </div>
+          <p class="auth-error" id="auth-error"></p>
+          <button type="submit" class="auth-submit-btn" id="auth-submit">Войти →</button>
+        </form>
+
+      </div>
+    </div>
+
   </div>
 
   <script src="js/app.js"></script>

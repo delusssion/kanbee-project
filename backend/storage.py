@@ -11,7 +11,6 @@ from models.task import Task, TaskCreate, TaskUpdate
 
 _pool: Optional[SimpleConnectionPool] = None
 
-# Map Pydantic field names → DB column names
 _COL = {'desc': 'description'}
 
 
@@ -40,8 +39,22 @@ def init_db():
     with _conn() as conn:
         with conn.cursor() as cur:
             cur.execute("""
+                CREATE TABLE IF NOT EXISTS users (
+                    id            TEXT PRIMARY KEY,
+                    username      TEXT UNIQUE NOT NULL,
+                    password_hash TEXT NOT NULL
+                )
+            """)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS sessions (
+                    session_id TEXT PRIMARY KEY,
+                    user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE
+                )
+            """)
+            cur.execute("""
                 CREATE TABLE IF NOT EXISTS tasks (
                     id          TEXT PRIMARY KEY,
+                    user_id     TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
                     title       TEXT NOT NULL,
                     description TEXT,
                     status      TEXT NOT NULL,
@@ -50,15 +63,70 @@ def init_db():
                 )
             """)
             cur.execute("""
-                CREATE TABLE IF NOT EXISTS settings (
-                    session_id   TEXT PRIMARY KEY,
+                CREATE TABLE IF NOT EXISTS user_settings (
+                    user_id      TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
                     lang         TEXT NOT NULL DEFAULT 'en',
-                    theme        TEXT NOT NULL DEFAULT 'light',
-                    default_view TEXT NOT NULL DEFAULT 'kanban',
-                    user_name    TEXT
+                    theme        TEXT NOT NULL DEFAULT 'dark',
+                    default_view TEXT NOT NULL DEFAULT 'kanban'
                 )
             """)
 
+
+# ── Users ──────────────────────────────────────────────────────────
+
+def create_user(username: str, password_hash: str) -> dict:
+    user_id = uuid4().hex
+    with _conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                'INSERT INTO users (id, username, password_hash) VALUES (%s, %s, %s) RETURNING id, username',
+                (user_id, username, password_hash),
+            )
+            return dict(cur.fetchone())
+
+
+def get_user_by_username(username: str) -> Optional[dict]:
+    with _conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute('SELECT * FROM users WHERE username = %s', (username,))
+            row = cur.fetchone()
+    return dict(row) if row else None
+
+
+def get_user_by_id(user_id: str) -> Optional[dict]:
+    with _conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute('SELECT id, username FROM users WHERE id = %s', (user_id,))
+            row = cur.fetchone()
+    return dict(row) if row else None
+
+
+# ── Sessions ───────────────────────────────────────────────────────
+
+def create_session(session_id: str, user_id: str):
+    with _conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                'INSERT INTO sessions (session_id, user_id) VALUES (%s, %s)',
+                (session_id, user_id),
+            )
+
+
+def get_session_user(session_id: str) -> Optional[str]:
+    with _conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute('SELECT user_id FROM sessions WHERE session_id = %s', (session_id,))
+            row = cur.fetchone()
+    return row[0] if row else None
+
+
+def delete_session(session_id: str):
+    with _conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute('DELETE FROM sessions WHERE session_id = %s', (session_id,))
+
+
+# ── Tasks ──────────────────────────────────────────────────────────
 
 def _row_to_task(row: dict) -> Task:
     return Task(
@@ -71,87 +139,98 @@ def _row_to_task(row: dict) -> Task:
     )
 
 
-def create_task(data: TaskCreate) -> Task:
+def create_task(data: TaskCreate, user_id: str) -> Task:
     task_id = uuid4().hex
     with _conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(
-                """INSERT INTO tasks (id, title, description, status, priority, due)
-                   VALUES (%s, %s, %s, %s, %s, %s) RETURNING *""",
-                (task_id, data.title, data.desc, data.status, data.priority, data.due),
+                """INSERT INTO tasks (id, user_id, title, description, status, priority, due)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING *""",
+                (task_id, user_id, data.title, data.desc, data.status, data.priority, data.due),
             )
-            row = cur.fetchone()
-    return _row_to_task(row)
+            return _row_to_task(cur.fetchone())
 
 
-def get_all_tasks() -> List[Task]:
+def get_all_tasks(user_id: str) -> List[Task]:
     with _conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            cur.execute('SELECT * FROM tasks ORDER BY id')
-            rows = cur.fetchall()
-    return [_row_to_task(r) for r in rows]
+            cur.execute('SELECT * FROM tasks WHERE user_id = %s ORDER BY id', (user_id,))
+            return [_row_to_task(r) for r in cur.fetchall()]
 
 
-def get_task(task_id: str) -> Optional[Task]:
+def get_task(task_id: str, user_id: str) -> Optional[Task]:
     with _conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            cur.execute('SELECT * FROM tasks WHERE id = %s', (task_id,))
+            cur.execute('SELECT * FROM tasks WHERE id = %s AND user_id = %s', (task_id, user_id))
             row = cur.fetchone()
     return _row_to_task(row) if row else None
 
 
-def update_task(task_id: str, data: TaskUpdate) -> Optional[Task]:
+def update_task(task_id: str, data: TaskUpdate, user_id: str) -> Optional[Task]:
     updates = data.dict(exclude_unset=True)
     if not updates:
-        return get_task(task_id)
+        return get_task(task_id, user_id)
 
     set_clause = ', '.join(f'{_COL.get(k, k)} = %s' for k in updates)
-    values = list(updates.values()) + [task_id]
+    values = list(updates.values()) + [task_id, user_id]
 
     with _conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(
-                f'UPDATE tasks SET {set_clause} WHERE id = %s RETURNING *',
+                f'UPDATE tasks SET {set_clause} WHERE id = %s AND user_id = %s RETURNING *',
                 values,
             )
             row = cur.fetchone()
     return _row_to_task(row) if row else None
 
 
-def delete_task(task_id: str) -> bool:
+def delete_task(task_id: str, user_id: str) -> bool:
     with _conn() as conn:
         with conn.cursor() as cur:
-            cur.execute('DELETE FROM tasks WHERE id = %s', (task_id,))
+            cur.execute('DELETE FROM tasks WHERE id = %s AND user_id = %s', (task_id, user_id))
             return cur.rowcount > 0
 
 
-# ── Settings ───────────────────────────────────────────────────────
+# ── User Settings ──────────────────────────────────────────────────
 
-def get_or_create_settings(session_id: str) -> dict:
+def get_or_create_user_settings(user_id: str) -> dict:
     with _conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            cur.execute('SELECT * FROM settings WHERE session_id = %s', (session_id,))
+            cur.execute('SELECT * FROM user_settings WHERE user_id = %s', (user_id,))
             row = cur.fetchone()
             if row is None:
                 cur.execute(
-                    """INSERT INTO settings (session_id) VALUES (%s)
-                       RETURNING *""",
-                    (session_id,),
+                    'INSERT INTO user_settings (user_id) VALUES (%s) RETURNING *',
+                    (user_id,),
                 )
                 row = cur.fetchone()
     return dict(row)
 
 
-def update_settings(session_id: str, data: dict) -> dict:
+def update_user_settings(user_id: str, data: dict) -> dict:
     if not data:
-        return get_or_create_settings(session_id)
+        return get_or_create_user_settings(user_id)
     set_clause = ', '.join(f'{k} = %s' for k in data)
-    values = list(data.values()) + [session_id]
+    values = list(data.values()) + [user_id]
     with _conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(
-                f'UPDATE settings SET {set_clause} WHERE session_id = %s RETURNING *',
+                f'UPDATE user_settings SET {set_clause} WHERE user_id = %s RETURNING *',
                 values,
             )
             row = cur.fetchone()
-    return dict(row) if row else get_or_create_settings(session_id)
+    return dict(row) if row else get_or_create_user_settings(user_id)
+
+
+def get_user_by_id_full(user_id: str) -> Optional[dict]:
+    with _conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute('SELECT * FROM users WHERE id = %s', (user_id,))
+            row = cur.fetchone()
+    return dict(row) if row else None
+
+
+def update_password(user_id: str, password_hash: str):
+    with _conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute('UPDATE users SET password_hash = %s WHERE id = %s', (password_hash, user_id))
