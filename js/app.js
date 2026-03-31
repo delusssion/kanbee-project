@@ -1,5 +1,5 @@
 // ── API ────────────────────────────────────────────────────────────
-const API_BASE = 'http://localhost:8000';
+const API_BASE = '';
 
 async function api(method, path, body = null) {
   const opts = {
@@ -433,10 +433,92 @@ function createCard(task) {
     document.querySelectorAll('.card-list').forEach(l => l.classList.remove('drag-over'));
   });
 
+  addTouchDrag(card, task.id);
+
   card.querySelector('.edit').addEventListener('click', () => openModal(task));
   card.querySelector('.delete').addEventListener('click', () => deleteTask(task.id));
 
   return card;
+}
+
+function addTouchDrag(card, taskId) {
+  let startX, startY, ghost = null, activeList = null, moved = false;
+  const THRESHOLD = 10;
+
+  card.addEventListener('touchstart', e => {
+    const touch = e.touches[0];
+    startX = touch.clientX;
+    startY = touch.clientY;
+    moved = false;
+  }, { passive: true });
+
+  card.addEventListener('touchmove', e => {
+    if (!e.touches.length) return;
+    const touch = e.touches[0];
+    const dx = touch.clientX - startX;
+    const dy = touch.clientY - startY;
+
+    if (!ghost && Math.hypot(dx, dy) > THRESHOLD) {
+      moved = true;
+      const rect = card.getBoundingClientRect();
+      ghost = card.cloneNode(true);
+      Object.assign(ghost.style, {
+        position: 'fixed',
+        width: rect.width + 'px',
+        left: rect.left + 'px',
+        top: rect.top + 'px',
+        opacity: '0.88',
+        pointerEvents: 'none',
+        zIndex: '9999',
+        transform: 'scale(1.04) rotate(1deg)',
+        boxShadow: '0 12px 40px rgba(0,0,0,0.35)',
+        transition: 'none',
+        borderRadius: '12px',
+      });
+      document.body.appendChild(ghost);
+      card.style.opacity = '0.25';
+      dragSrcId = taskId;
+    }
+
+    if (ghost) {
+      e.preventDefault();
+      const touch2 = e.touches[0];
+      const rect = card.getBoundingClientRect();
+      ghost.style.left = (touch2.clientX - rect.width / 2) + 'px';
+      ghost.style.top  = (touch2.clientY - 40) + 'px';
+
+      ghost.style.display = 'none';
+      const el = document.elementFromPoint(touch2.clientX, touch2.clientY);
+      ghost.style.display = '';
+
+      const listEl = el?.closest('.cards-list');
+      document.querySelectorAll('.cards-list').forEach(l => l.classList.remove('drag-over'));
+      if (listEl) { listEl.classList.add('drag-over'); activeList = listEl; }
+      else activeList = null;
+    }
+  }, { passive: false });
+
+  card.addEventListener('touchend', async () => {
+    if (ghost) {
+      ghost.remove();
+      ghost = null;
+      card.style.opacity = '';
+      document.querySelectorAll('.cards-list').forEach(l => l.classList.remove('drag-over'));
+
+      if (activeList && dragSrcId) {
+        const status = activeList.dataset.status;
+        const task = tasks.find(t => t.id === dragSrcId);
+        if (task && task.status !== status) {
+          const updated = await api('PATCH', `/tasks/${task.id}`, { status });
+          const idx = tasks.findIndex(t => t.id === task.id);
+          if (idx !== -1) tasks[idx] = updated;
+          render();
+        }
+      }
+      dragSrcId = null;
+      activeList = null;
+    }
+  });
 }
 
 function bindDrop(list, status) {
@@ -605,7 +687,7 @@ function openModal(task = null) {
   }
 
   overlay.classList.add('open');
-  document.getElementById('task-title').focus();
+  if (window.innerWidth > 768) document.getElementById('task-title').focus();
 }
 
 function closeModal() {

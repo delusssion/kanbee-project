@@ -18,7 +18,7 @@ app = FastAPI(title='KanBee API', lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=['null'],
-    allow_origin_regex=r'^http://localhost(:\d+)?$',
+    allow_origin_regex=r'^https?://(www\.)?kanbee\.ru$|^http://localhost(:\d+)?$',
     allow_credentials=True,
     allow_methods=['*'],
     allow_headers=['*'],
