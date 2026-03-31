@@ -29,7 +29,6 @@ let defaultView = 'kanban';
 
 // ── Init ───────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
-  bindAuth();
   const user = await checkAuth();
   if (!user) return;
   await initApp();
@@ -41,7 +40,7 @@ async function checkAuth() {
     userName = user.username;
     return user;
   } catch {
-    showAuthModal();
+    window.location.replace('registration.html');
     return null;
   }
 }
@@ -68,89 +67,6 @@ async function loadSettings() {
   applyLang();
 }
 
-// ── Auth Modal ─────────────────────────────────────────────────────
-function showAuthModal() {
-  document.getElementById('auth-overlay').classList.remove('hidden');
-}
-
-function hideAuthModal() {
-  document.getElementById('auth-overlay').classList.add('hidden');
-}
-
-function bindAuth() {
-  const form        = document.getElementById('auth-form');
-  const tabLogin    = document.getElementById('auth-tab-login');
-  const tabReg      = document.getElementById('auth-tab-register');
-  const submitBtn   = document.getElementById('auth-submit');
-  const errorEl     = document.getElementById('auth-error');
-  const usernameEl  = document.getElementById('auth-username');
-  const passwordEl  = document.getElementById('auth-password');
-  const confirmWrap = document.getElementById('auth-confirm-wrap');
-  const confirmEl   = document.getElementById('auth-confirm');
-  const eyebrow     = document.getElementById('auth-eyebrow');
-  const heading     = document.getElementById('auth-form-heading');
-  const switchLabel = document.getElementById('auth-switch-label');
-
-  let mode = 'login';
-
-  function setMode(m) {
-    mode = m;
-    const isReg = m === 'register';
-    submitBtn.textContent     = isReg ? 'Зарегистрироваться →' : 'Войти →';
-    confirmWrap.style.display = isReg ? '' : 'none';
-    confirmEl.required        = isReg;
-    passwordEl.placeholder    = isReg ? 'Минимум 8 символов' : 'Введите пароль';
-    eyebrow.textContent       = isReg ? 'Добро пожаловать' : 'С возвращением';
-    heading.textContent       = isReg ? 'Создать аккаунт' : 'Войти в аккаунт';
-    switchLabel.textContent   = isReg ? 'Уже есть аккаунт?' : 'Нет аккаунта?';
-    tabLogin.style.display    = isReg ? '' : 'none';
-    tabReg.style.display      = isReg ? 'none' : '';
-    errorEl.textContent = '';
-    form.reset();
-  }
-
-  tabLogin.addEventListener('click', () => setMode('login'));
-  tabReg.addEventListener('click',   () => setMode('register'));
-
-  form.addEventListener('submit', async e => {
-    e.preventDefault();
-    errorEl.textContent = '';
-    const username = usernameEl.value.trim();
-    const password = passwordEl.value;
-
-    if (mode === 'register') {
-      if (username.length < 5) {
-        errorEl.textContent = 'Логин должен содержать минимум 5 символов'; return;
-      }
-      if (password.length < 8) {
-        errorEl.textContent = 'Пароль должен содержать минимум 8 символов'; return;
-      }
-      if (!/[a-zA-Zа-яА-Я]/.test(password)) {
-        errorEl.textContent = 'Пароль должен содержать хотя бы одну букву'; return;
-      }
-      if (!/\d/.test(password)) {
-        errorEl.textContent = 'Пароль должен содержать хотя бы одну цифру'; return;
-      }
-      if (password !== confirmEl.value) {
-        errorEl.textContent = 'Пароли не совпадают'; return;
-      }
-    }
-
-    try {
-      const path = mode === 'login' ? '/auth/login' : '/auth/register';
-      const user = await api('POST', path, { username, password });
-      userName = user.username;
-      hideAuthModal();
-      await initApp();
-    } catch (err) {
-      try {
-        errorEl.textContent = JSON.parse(err.message).detail || 'Ошибка';
-      } catch {
-        errorEl.textContent = err.message || 'Ошибка';
-      }
-    }
-  });
-}
 
 async function refreshTasks() {
   tasks = await api('GET', '/tasks');
@@ -944,10 +860,7 @@ function bindProfileDropdown() {
 
   document.getElementById('dropdown-auth-btn').addEventListener('click', async () => {
     await api('POST', '/auth/logout');
-    userName = '';
-    tasks = [];
-    area.classList.remove('open');
-    showAuthModal();
+    window.location.replace('registration.html');
   });
 
   document.getElementById('dropdown-open-settings').addEventListener('click', () => {
