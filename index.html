@@ -6,7 +6,7 @@
   <title>KanBee</title>
   <link rel="stylesheet" href="css/styles.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Lora:wght@600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 </head>
 <body>
 
@@ -410,61 +410,108 @@
 
     <!-- Left decorative panel -->
     <div class="auth-panel-left">
-      <div class="auth-orb auth-orb-1"></div>
-      <div class="auth-orb auth-orb-2"></div>
-      <div class="auth-orb auth-orb-3"></div>
-      <div class="auth-particles" id="auth-particles"></div>
+      <div class="auth-circle-1"></div>
+      <div class="auth-circle-2"></div>
 
-      <!-- Mini board preview -->
-      <div class="auth-bp">
-        <div class="auth-bp-header">
-          <span class="auth-bp-logo">KanBee</span>
-          <div style="display:flex;gap:6px;margin-left:auto">
-            <div class="auth-bp-dot2"></div>
-            <div class="auth-bp-dot"></div>
+      <div class="auth-panel-top">
+        <div class="auth-logo">
+          <div class="auth-logo-mark">
+            <svg class="auth-logo-bee" viewBox="0 0 20 20" fill="none">
+              <ellipse cx="10" cy="11" rx="5" ry="6.5" fill="#FFF0D0"/>
+              <rect x="5.2" y="8.5" width="9.6" height="2" rx=".9" fill="#7A5C2E"/>
+              <rect x="5.2" y="11.5" width="9.6" height="2" rx=".9" fill="#7A5C2E"/>
+              <path d="M10 17.5l-1.5 2.5 1.5-1 1.5 1z" fill="#FFF0D0"/>
+              <circle cx="10" cy="5" r="3" fill="#FFF0D0"/>
+              <circle cx="8.8" cy="4.8" r=".75" fill="#7A5C2E"/>
+              <circle cx="11.2" cy="4.8" r=".75" fill="#7A5C2E"/>
+              <path d="M8.8 2.5Q7 .5 5 1.5" stroke="#FFF0D0" stroke-width=".9" stroke-linecap="round" fill="none"/>
+              <circle cx="5" cy="1.5" r=".7" fill="#FFF0D0"/>
+              <path d="M11.2 2.5Q13 .5 15 1.5" stroke="#FFF0D0" stroke-width=".9" stroke-linecap="round" fill="none"/>
+              <circle cx="15" cy="1.5" r=".7" fill="#FFF0D0"/>
+              <ellipse cx="4" cy="9.5" rx="4" ry="2.5" fill="#F5E0A0" opacity=".55" transform="rotate(-18,4,9.5)"/>
+              <ellipse cx="16" cy="9.5" rx="4" ry="2.5" fill="#F5E0A0" opacity=".55" transform="rotate(18,16,9.5)"/>
+            </svg>
           </div>
+          <span class="auth-logo-name">KanBee</span>
         </div>
-        <div class="auth-bp-body">
-          <div>
-            <div class="auth-bp-col-head auth-col-todo"><span></span>To Do</div>
-            <div class="auth-bp-card">
-              <div class="auth-bp-card-title">Дизайн главной</div>
-              <span class="auth-bp-badge auth-badge-high">▲ High</span>
-            </div>
-            <div class="auth-bp-card">
-              <div class="auth-bp-card-title">API контракты</div>
-              <span class="auth-bp-badge auth-badge-med">● Med</span>
-            </div>
-          </div>
-          <div>
-            <div class="auth-bp-col-head auth-col-inp"><span></span>In Process</div>
-            <div class="auth-bp-card auth-bp-card-active">
-              <div class="auth-bp-card-title">Авторизация</div>
-              <span class="auth-bp-badge auth-badge-high">▲ High</span>
-            </div>
-            <div class="auth-bp-card">
-              <div class="auth-bp-card-title">Тёмная тема</div>
-              <span class="auth-bp-badge auth-badge-low">▼ Low</span>
-            </div>
-          </div>
-          <div>
-            <div class="auth-bp-col-head auth-col-done"><span></span>Done</div>
-            <div class="auth-bp-card auth-bp-card-done">
-              <div class="auth-bp-card-title">Kanban Board</div>
-              <span class="auth-bp-badge auth-badge-low">▼ Low</span>
-            </div>
-            <div class="auth-bp-card auth-bp-card-done">
-              <div class="auth-bp-card-title">DnD карточки</div>
-              <span class="auth-bp-badge auth-badge-med">● Med</span>
-            </div>
-          </div>
+
+        <h1 class="auth-tagline">Задачи под<br/><em>контролем</em></h1>
+        <p class="auth-tagline-sub">Канбан-доска и трекер задач для командной работы. Просто, быстро, красиво.</p>
+
+        <div class="auth-features">
+          <div class="auth-feat-pill"><span class="auth-feat-dot"></span>Drag &amp; drop</div>
+          <div class="auth-feat-pill"><span class="auth-feat-dot"></span>EN / RU</div>
+          <div class="auth-feat-pill"><span class="auth-feat-dot"></span>Тёмная тема</div>
+          <div class="auth-feat-pill"><span class="auth-feat-dot"></span>Приоритеты</div>
         </div>
       </div>
 
-      <!-- Tagline -->
-      <div class="auth-tagline">
-        <h1>Управляй задачами<br/><em>проще и быстрее</em></h1>
-        <p>Канбан-доска и трекер задач для твоей команды.<br/>Создай аккаунт и начни работу за 30 секунд.</p>
+      <!-- Board illustration -->
+      <div class="auth-board-wrap">
+        <div class="auth-board-ui">
+          <div class="auth-board-bar">
+            <div class="auth-bar-dots">
+              <div class="auth-bar-dot"></div>
+              <div class="auth-bar-dot"></div>
+              <div class="auth-bar-dot"></div>
+            </div>
+            <span class="auth-bar-title">Kanban Board</span>
+            <button class="auth-bar-btn">+ New Task</button>
+          </div>
+          <div class="auth-board-cols">
+            <div class="auth-bcol">
+              <div class="auth-bcol-head">
+                <div class="auth-bcol-dot" style="background:#6B72C8"></div>
+                <span class="auth-bcol-name">To Do</span>
+                <span class="auth-bcol-n">3</span>
+              </div>
+              <div class="auth-bcard">
+                <div class="auth-bcard-title">Страница регистрации</div>
+                <span class="auth-bcard-badge auth-b-high">▲ High</span>
+                <div class="auth-bcard-due">02 апр</div>
+              </div>
+              <div class="auth-bcard">
+                <div class="auth-bcard-title">API настроек</div>
+                <span class="auth-bcard-badge auth-b-med">● Med</span>
+              </div>
+              <div class="auth-bcard">
+                <div class="auth-bcard-title">ML-подсказки</div>
+                <span class="auth-bcard-badge auth-b-low">▼ Low</span>
+              </div>
+            </div>
+            <div class="auth-bcol">
+              <div class="auth-bcol-head">
+                <div class="auth-bcol-dot" style="background:#C9820A"></div>
+                <span class="auth-bcol-name">In Process</span>
+                <span class="auth-bcol-n">2</span>
+              </div>
+              <div class="auth-bcard" style="border-color:#F0D8A8">
+                <div class="auth-bcard-title">Авторизация</div>
+                <span class="auth-bcard-badge auth-b-high">▲ High</span>
+                <div class="auth-bcard-due" style="color:#C04040">28 мар</div>
+              </div>
+              <div class="auth-bcard">
+                <div class="auth-bcard-title">Тёмная тема</div>
+                <span class="auth-bcard-badge auth-b-low">▼ Low</span>
+              </div>
+            </div>
+            <div class="auth-bcol">
+              <div class="auth-bcol-head">
+                <div class="auth-bcol-dot" style="background:#3A9E6A"></div>
+                <span class="auth-bcol-name">Done</span>
+                <span class="auth-bcol-n">2</span>
+              </div>
+              <div class="auth-bcard" style="opacity:.65">
+                <div class="auth-bcard-title">Kanban Board</div>
+                <span class="auth-bcard-badge auth-b-med">● Med</span>
+              </div>
+              <div class="auth-bcard" style="opacity:.65">
+                <div class="auth-bcard-title">Drag-and-drop</div>
+                <span class="auth-bcard-badge auth-b-high">▲ High</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -472,14 +519,13 @@
     <div class="auth-panel-right">
       <div class="auth-form-card">
 
-        <div class="auth-brand">
-          <span class="auth-brand-name">KanBee</span>
-        </div>
-
-        <div class="auth-tabs">
-          <button class="auth-tab active" id="auth-tab-login">Войти</button>
-          <button class="auth-tab" id="auth-tab-register">Регистрация</button>
-        </div>
+        <p class="auth-form-eyebrow" id="auth-eyebrow">С возвращением</p>
+        <h2 class="auth-form-heading" id="auth-form-heading">Войти в аккаунт</h2>
+        <p class="auth-form-sub">
+          <span id="auth-switch-label">Нет аккаунта?</span>
+          <button class="auth-tab-link" id="auth-tab-register">Зарегистрироваться</button>
+          <button class="auth-tab-link" id="auth-tab-login" style="display:none">Войти</button>
+        </p>
 
         <form id="auth-form">
           <div class="auth-field">

@@ -78,22 +78,6 @@ function hideAuthModal() {
 }
 
 function bindAuth() {
-  // Generate floating particles
-  const particlesEl = document.getElementById('auth-particles');
-  for (let i = 0; i < 28; i++) {
-    const p = document.createElement('div');
-    p.className = 'auth-particle';
-    p.style.cssText = `
-      left:${Math.random() * 100}%;
-      bottom:${Math.random() * 30}%;
-      --dur:${4 + Math.random() * 6}s;
-      --delay:${Math.random() * 6}s;
-      width:${2 + Math.random() * 3}px;
-      height:${2 + Math.random() * 3}px;
-    `;
-    particlesEl.appendChild(p);
-  }
-
   const form        = document.getElementById('auth-form');
   const tabLogin    = document.getElementById('auth-tab-login');
   const tabReg      = document.getElementById('auth-tab-register');
@@ -103,18 +87,24 @@ function bindAuth() {
   const passwordEl  = document.getElementById('auth-password');
   const confirmWrap = document.getElementById('auth-confirm-wrap');
   const confirmEl   = document.getElementById('auth-confirm');
+  const eyebrow     = document.getElementById('auth-eyebrow');
+  const heading     = document.getElementById('auth-form-heading');
+  const switchLabel = document.getElementById('auth-switch-label');
 
   let mode = 'login';
 
   function setMode(m) {
     mode = m;
-    tabLogin.classList.toggle('active', m === 'login');
-    tabReg.classList.toggle('active', m === 'register');
-    submitBtn.textContent    = m === 'login' ? 'Войти →' : 'Зарегистрироваться →';
-    confirmWrap.style.display = m === 'register' ? '' : 'none';
-    if (m === 'register') confirmEl.required = true;
-    else                  confirmEl.required = false;
-    passwordEl.placeholder = m === 'login' ? 'Введите пароль' : 'Минимум 8 символов';
+    const isReg = m === 'register';
+    submitBtn.textContent     = isReg ? 'Зарегистрироваться →' : 'Войти →';
+    confirmWrap.style.display = isReg ? '' : 'none';
+    confirmEl.required        = isReg;
+    passwordEl.placeholder    = isReg ? 'Минимум 8 символов' : 'Введите пароль';
+    eyebrow.textContent       = isReg ? 'Добро пожаловать' : 'С возвращением';
+    heading.textContent       = isReg ? 'Создать аккаунт' : 'Войти в аккаунт';
+    switchLabel.textContent   = isReg ? 'Уже есть аккаунт?' : 'Нет аккаунта?';
+    tabLogin.style.display    = isReg ? '' : 'none';
+    tabReg.style.display      = isReg ? 'none' : '';
     errorEl.textContent = '';
     form.reset();
   }
