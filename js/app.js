@@ -40,7 +40,7 @@ async function checkAuth() {
     userName = user.username;
     return user;
   } catch {
-    window.location.replace('registration.html');
+    window.location.replace('/registration');
     return null;
   }
 }
@@ -860,7 +860,7 @@ function bindProfileDropdown() {
 
   document.getElementById('dropdown-auth-btn').addEventListener('click', async () => {
     await api('POST', '/auth/logout');
-    window.location.replace('registration.html');
+    window.location.replace('/registration');
   });
 
   document.getElementById('dropdown-open-settings').addEventListener('click', () => {

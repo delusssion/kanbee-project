@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // If already logged in, go straight to the board
   try {
     await api('GET', '/auth/me');
-    window.location.replace('board.html');
+    window.location.replace('/board');
     return;
   } catch {
     // not logged in — show the form
@@ -94,7 +94,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
       const path = mode === 'login' ? '/auth/login' : '/auth/register';
       await api('POST', path, { username, password });
-      window.location.replace('board.html');
+      window.location.replace('/board');
     } catch (err) {
       try {
         errorEl.textContent = JSON.parse(err.message).detail || 'Ошибка';

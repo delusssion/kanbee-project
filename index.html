@@ -6,9 +6,9 @@
   <script>
     fetch('/auth/me', { credentials: 'include' })
       .then(r => r.ok
-        ? window.location.replace('board.html')
-        : window.location.replace('registration.html'))
-      .catch(() => window.location.replace('registration.html'));
+        ? window.location.replace('/board')
+        : window.location.replace('/registration'))
+      .catch(() => window.location.replace('/registration'));
   </script>
 </head>
 <body></body>
