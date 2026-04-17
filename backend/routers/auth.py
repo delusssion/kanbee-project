@@ -42,7 +42,7 @@ def register(payload: UserRegister, response: Response):
 
     session_id = uuid4().hex
     storage.create_session(session_id, user['id'])
-    response.set_cookie(SESSION_COOKIE, session_id, samesite='lax', httponly=False, secure=True)
+    response.set_cookie(SESSION_COOKIE, session_id, samesite='lax', httponly=True, secure=True)
 
     return UserOut(id=user['id'], username=user['username'])
 
@@ -55,7 +55,7 @@ def login(payload: UserLogin, response: Response):
 
     session_id = uuid4().hex
     storage.create_session(session_id, user['id'])
-    response.set_cookie(SESSION_COOKIE, session_id, samesite='lax', httponly=False, secure=True)
+    response.set_cookie(SESSION_COOKIE, session_id, samesite='lax', httponly=True, secure=True)
 
     return UserOut(id=user['id'], username=user['username'])
 

@@ -1,6 +1,8 @@
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi.encoders import jsonable_encoder
+from fastapi.responses import JSONResponse
 
 import storage
 from auth_utils import get_current_user_id
@@ -17,6 +19,20 @@ def get_tasks(user_id: str = Depends(get_current_user_id)):
 @router.post('', response_model=Task, status_code=201)
 def create_task(payload: TaskCreate, user_id: str = Depends(get_current_user_id)):
     return storage.create_task(payload, user_id)
+
+
+@router.get('/export', response_model=List[Task])
+def export_tasks(user_id: str = Depends(get_current_user_id)):
+    tasks = storage.get_all_tasks(user_id)
+    return JSONResponse(
+        content=jsonable_encoder(tasks),
+        headers={'Content-Disposition': 'attachment; filename="kanbee-tasks.json"'},
+    )
+
+
+@router.post('/import', response_model=List[Task], status_code=201)
+def import_tasks(payload: List[TaskCreate], user_id: str = Depends(get_current_user_id)):
+    return [storage.create_task(task, user_id) for task in payload]
 
 
 @router.patch('/{task_id}', response_model=Task)
