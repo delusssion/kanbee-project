@@ -99,6 +99,7 @@ const TRANSLATIONS = {
     'settings-confirm-clear': 'Delete all tasks? This cannot be undone.',
     'settings-confirm-delete-task': 'Do you really want to delete this task? This action cannot be undone.',
     'settings-change-pwd':     'Change password',
+    'settings-forgot-pwd':     'Forgot password?',
     'settings-pwd-current-ph': 'Current password',
     'settings-pwd-new-ph':     'New password (8+ chars, letter + digit)',
     'settings-pwd-success':    'Password changed',
@@ -163,6 +164,7 @@ const TRANSLATIONS = {
     'settings-confirm-clear': 'Удалить все задачи? Это необратимо.',
     'settings-confirm-delete-task': 'Вы действительно хотите удалить данную задачу? Это действие нельзя отменить.',
     'settings-change-pwd':     'Сменить пароль',
+    'settings-forgot-pwd':     'Забыл пароль?',
     'settings-pwd-current-ph': 'Текущий пароль',
     'settings-pwd-new-ph':     'Новый пароль (8+ симв., буква и цифра)',
     'settings-pwd-success':    'Пароль изменён',
@@ -811,6 +813,9 @@ function bindSettings() {
   document.getElementById('settings-pwd-cancel').addEventListener('click', () => {
     document.getElementById('settings-pwd-form').classList.remove('open');
     document.getElementById('settings-pwd-error').textContent = '';
+  });
+  document.getElementById('settings-pwd-forgot').addEventListener('click', () => {
+    window.location.href = '/reset-password';
   });
   document.getElementById('settings-pwd-save').addEventListener('click', async () => {
     const current = document.getElementById('settings-pwd-current').value;

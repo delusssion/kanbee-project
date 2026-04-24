@@ -19,3 +19,8 @@ class UserOut(BaseModel):
 class ChangePassword(BaseModel):
     current_password: str
     new_password: str
+
+
+class ResetPassword(BaseModel):
+    username: str
+    new_password: str

@@ -1534,7 +1534,10 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 .settings-pwd-form.open { display: flex; }
 .settings-pwd-error { font-size: 12px; color: var(--high); min-height: 16px; }
-.settings-pwd-actions { display: flex; gap: 8px; justify-content: flex-end; }
+.settings-pwd-actions { display: flex; gap: 8px; justify-content: space-between; align-items: center; }
+.settings-pwd-actions-right { display: flex; gap: 8px; }
+.settings-pwd-forgot { color: var(--text-muted); font-size: 12px; padding: 5px 8px; }
+.auth-forgot-wrap { margin-top: 10px; text-align: center; }
 .btn-sm { padding: 5px 12px; font-size: 12px; }
 
 /* ── Auth Overlay ──────────────────────────────────────────────────── */

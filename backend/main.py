@@ -54,6 +54,11 @@ def registration_page():
     return FileResponse(ROOT_DIR / 'registration.html')
 
 
+@app.get('/reset-password')
+def reset_password_page():
+    return FileResponse(ROOT_DIR / 'reset-password.html')
+
+
 app.include_router(auth.router)
 app.include_router(tasks.router)
 app.include_router(settings.router)

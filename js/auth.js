@@ -40,6 +40,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const eyebrow     = document.getElementById('auth-eyebrow');
   const heading     = document.getElementById('auth-form-heading');
   const switchLabel = document.getElementById('auth-switch-label');
+  const forgotWrap  = document.getElementById('auth-forgot-wrap');
 
   let mode = 'login';
 
@@ -52,9 +53,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     passwordEl.placeholder    = isReg ? 'Минимум 8 символов' : 'Введите пароль';
     eyebrow.textContent       = isReg ? 'Добро пожаловать' : 'С возвращением';
     heading.textContent       = isReg ? 'Создать аккаунт' : 'Войти в аккаунт';
-    switchLabel.textContent   = isReg ? 'Уже есть аккаунт?' : 'Нет аккаунта?';
-    tabLogin.style.display    = isReg ? '' : 'none';
-    tabReg.style.display      = isReg ? 'none' : '';
+    switchLabel.textContent      = isReg ? 'Уже есть аккаунт?' : 'Нет аккаунта?';
+    tabLogin.style.display       = isReg ? '' : 'none';
+    tabReg.style.display         = isReg ? 'none' : '';
+    forgotWrap.style.display     = isReg ? 'none' : '';
     errorEl.textContent = '';
     form.reset();
   }
