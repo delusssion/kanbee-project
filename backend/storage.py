@@ -167,7 +167,10 @@ def get_task(task_id: str, user_id: str) -> Optional[Task]:
 
 
 def update_task(task_id: str, data: TaskUpdate, user_id: str) -> Optional[Task]:
-    updates = data.model_dump(exclude_unset=True)
+    if hasattr(data, 'model_dump'):
+        updates = data.model_dump(exclude_unset=True)
+    else:
+        updates = data.dict(exclude_unset=True)
     if not updates:
         return get_task(task_id, user_id)
 

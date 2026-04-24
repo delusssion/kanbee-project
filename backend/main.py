@@ -1,10 +1,15 @@
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 import storage
 from routers import auth, settings, tasks
+
+ROOT_DIR = Path(__file__).resolve().parent.parent
 
 
 @asynccontextmanager
@@ -28,6 +33,25 @@ app.add_middleware(
 @app.get('/health')
 def health():
     return {'status': 'ok'}
+
+
+app.mount('/css', StaticFiles(directory=ROOT_DIR / 'css'), name='css')
+app.mount('/js', StaticFiles(directory=ROOT_DIR / 'js'), name='js')
+
+
+@app.get('/')
+def index_page():
+    return FileResponse(ROOT_DIR / 'index.html')
+
+
+@app.get('/board')
+def board_page():
+    return FileResponse(ROOT_DIR / 'board.html')
+
+
+@app.get('/registration')
+def registration_page():
+    return FileResponse(ROOT_DIR / 'registration.html')
 
 
 app.include_router(auth.router)

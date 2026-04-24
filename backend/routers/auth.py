@@ -2,7 +2,7 @@ from typing import Optional
 from uuid import uuid4
 
 import bcrypt
-from fastapi import APIRouter, Cookie, Depends, HTTPException, Response
+from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response
 
 import storage
 from auth_utils import get_current_user_id
@@ -30,7 +30,7 @@ def _validate_password(password: str):
 
 
 @router.post('/register', response_model=UserOut)
-def register(payload: UserRegister, response: Response):
+def register(payload: UserRegister, request: Request, response: Response):
     _validate_username(payload.username)
     _validate_password(payload.password)
 
@@ -42,20 +42,32 @@ def register(payload: UserRegister, response: Response):
 
     session_id = uuid4().hex
     storage.create_session(session_id, user['id'])
-    response.set_cookie(SESSION_COOKIE, session_id, samesite='lax', httponly=True, secure=True)
+    response.set_cookie(
+        SESSION_COOKIE,
+        session_id,
+        samesite='lax',
+        httponly=True,
+        secure=(request.url.scheme == 'https'),
+    )
 
     return UserOut(id=user['id'], username=user['username'])
 
 
 @router.post('/login', response_model=UserOut)
-def login(payload: UserLogin, response: Response):
+def login(payload: UserLogin, request: Request, response: Response):
     user = storage.get_user_by_username(payload.username)
     if not user or not bcrypt.checkpw(payload.password.encode(), user['password_hash'].encode()):
         raise HTTPException(401, 'Неверный логин или пароль')
 
     session_id = uuid4().hex
     storage.create_session(session_id, user['id'])
-    response.set_cookie(SESSION_COOKIE, session_id, samesite='lax', httponly=True, secure=True)
+    response.set_cookie(
+        SESSION_COOKIE,
+        session_id,
+        samesite='lax',
+        httponly=True,
+        secure=(request.url.scheme == 'https'),
+    )
 
     return UserOut(id=user['id'], username=user['username'])
 

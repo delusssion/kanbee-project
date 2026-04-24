@@ -97,6 +97,7 @@ const TRANSLATIONS = {
     'settings-save':          'Save',
     'settings-name-ph':       'Your name',
     'settings-confirm-clear': 'Delete all tasks? This cannot be undone.',
+    'settings-confirm-delete-task': 'Do you really want to delete this task? This action cannot be undone.',
     'settings-change-pwd':     'Change password',
     'settings-pwd-current-ph': 'Current password',
     'settings-pwd-new-ph':     'New password (8+ chars, letter + digit)',
@@ -160,6 +161,7 @@ const TRANSLATIONS = {
     'settings-save':          'Сохранить',
     'settings-name-ph':       'Ваше имя',
     'settings-confirm-clear': 'Удалить все задачи? Это необратимо.',
+    'settings-confirm-delete-task': 'Вы действительно хотите удалить данную задачу? Это действие нельзя отменить.',
     'settings-change-pwd':     'Сменить пароль',
     'settings-pwd-current-ph': 'Текущий пароль',
     'settings-pwd-new-ph':     'Новый пароль (8+ симв., буква и цифра)',
@@ -683,9 +685,11 @@ function bindNav() {
 
 // ── Task actions ───────────────────────────────────────────────────
 async function deleteTask(id) {
-  await api('DELETE', `/tasks/${id}`);
-  tasks = tasks.filter(t => t.id !== id);
-  render();
+  showConfirm(t('settings-confirm-delete-task'), async () => {
+    await api('DELETE', `/tasks/${id}`);
+    tasks = tasks.filter(t => t.id !== id);
+    render();
+  });
 }
 
 // ── Helpers ────────────────────────────────────────────────────────
