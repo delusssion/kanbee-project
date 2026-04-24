@@ -1,6 +1,6 @@
-from typing import List
+from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 
@@ -12,8 +12,8 @@ router = APIRouter(prefix='/tasks', tags=['tasks'])
 
 
 @router.get('', response_model=List[Task])
-def get_tasks(user_id: str = Depends(get_current_user_id)):
-    return storage.get_all_tasks(user_id)
+def get_tasks(board_id: Optional[str] = Query(default=None), user_id: str = Depends(get_current_user_id)):
+    return storage.get_all_tasks(user_id, board_id)
 
 
 @router.post('', response_model=Task, status_code=201)

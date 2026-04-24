@@ -13,6 +13,7 @@ class Task(BaseModel):
     status: Status
     priority: Priority
     due: Optional[str] = None
+    board_id: Optional[str] = None
 
     @field_validator('desc', 'due', mode='before')
     @classmethod
@@ -28,6 +29,7 @@ class TaskCreate(BaseModel):
     status: Status = 'todo'
     priority: Priority = 'medium'
     due: Optional[str] = None
+    board_id: Optional[str] = None
 
     @field_validator('title')
     @classmethod

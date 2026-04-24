@@ -7,7 +7,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 import storage
-from routers import auth, settings, tasks
+from routers import auth, boards, settings, tasks
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 
@@ -60,5 +60,6 @@ def reset_password_page():
 
 
 app.include_router(auth.router)
+app.include_router(boards.router)
 app.include_router(tasks.router)
 app.include_router(settings.router)

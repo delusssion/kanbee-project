@@ -21,6 +21,9 @@ async function api(method, path, body = null) {
 
 // ── State ──────────────────────────────────────────────────────────
 let tasks = [];
+let allTasks = [];
+let boards = [];
+let currentBoardId = null;
 let dragSrcId = null;
 let lang = 'en';
 let currentView = 'kanban';
@@ -47,6 +50,7 @@ async function checkAuth() {
 
 async function initApp() {
   await loadSettings();
+  await loadBoards();
   applyDefaultView();
   bindNav();
   bindModal();
@@ -56,6 +60,7 @@ async function initApp() {
   bindProfileDropdown();
   bindSettings();
   bindConfirm();
+  bindBoards();
   await refreshTasks();
 }
 
@@ -68,8 +73,21 @@ async function loadSettings() {
 }
 
 
+async function loadBoards() {
+  boards = await api('GET', '/boards');
+  if (boards.length === 0) {
+    const b = await api('POST', '/boards', { name: 'My Board' });
+    boards = [b];
+  }
+  currentBoardId = boards[0].id;
+  renderBoards();
+}
+
 async function refreshTasks() {
-  tasks = await api('GET', '/tasks');
+  [tasks, allTasks] = await Promise.all([
+    api('GET', `/tasks?board_id=${currentBoardId}`),
+    api('GET', '/tasks'),
+  ]);
   render();
 }
 
@@ -98,6 +116,9 @@ const TRANSLATIONS = {
     'settings-name-ph':       'Your name',
     'settings-confirm-clear': 'Delete all tasks? This cannot be undone.',
     'settings-confirm-delete-task': 'Do you really want to delete this task? This action cannot be undone.',
+    'boards-label':            'Boards',
+    'boards-new-name':         'New Board',
+    'boards-confirm-delete':   'Delete this board and all its tasks? This cannot be undone.',
     'settings-change-pwd':     'Change password',
     'settings-forgot-pwd':     'Forgot password?',
     'settings-pwd-current-ph': 'Current password',
@@ -120,10 +141,12 @@ const TRANSLATIONS = {
     'pri-medium':          'Medium',
     'pri-low':             'Low',
     'th-task':             'Task',
+    'th-board':            'Board',
     'th-status':           'Status',
     'th-priority':         'Priority',
     'th-due':              'Due Date',
     'th-actions':          'Actions',
+    'filter-all-boards':   'All Boards',
     'empty-text':          'No tasks yet. Create your first task.',
     'modal-new':           'New Task',
     'modal-edit':          'Edit Task',
@@ -163,6 +186,9 @@ const TRANSLATIONS = {
     'settings-name-ph':       'Ваше имя',
     'settings-confirm-clear': 'Удалить все задачи? Это необратимо.',
     'settings-confirm-delete-task': 'Вы действительно хотите удалить данную задачу? Это действие нельзя отменить.',
+    'boards-label':            'Доски',
+    'boards-new-name':         'Новая доска',
+    'boards-confirm-delete':   'Удалить эту доску и все её задачи? Это необратимо.',
     'settings-change-pwd':     'Сменить пароль',
     'settings-forgot-pwd':     'Забыл пароль?',
     'settings-pwd-current-ph': 'Текущий пароль',
@@ -185,10 +211,12 @@ const TRANSLATIONS = {
     'pri-medium':          'Средний',
     'pri-low':             'Низкий',
     'th-task':             'Задача',
+    'th-board':            'Доска',
     'th-status':           'Статус',
     'th-priority':         'Приоритет',
     'th-due':              'Срок',
     'th-actions':          'Действия',
+    'filter-all-boards':   'Все доски',
     'empty-text':          'Задач пока нет. Создайте первую задачу.',
     'modal-new':           'Новая задача',
     'modal-edit':          'Редактировать',
@@ -467,9 +495,10 @@ function renderTracker(filter = {}) {
   const body  = document.getElementById('tracker-body');
   const empty = document.getElementById('tracker-empty');
 
-  const filtered = tasks.filter(task => {
+  const filtered = allTasks.filter(task => {
     const q = (filter.query || '').toLowerCase();
     if (q && !task.title.toLowerCase().includes(q) && !(task.desc || '').toLowerCase().includes(q)) return false;
+    if (filter.board    && task.board_id !== filter.board)    return false;
     if (filter.status   && task.status   !== filter.status)   return false;
     if (filter.priority && task.priority !== filter.priority) return false;
     return true;
@@ -484,12 +513,15 @@ function renderTracker(filter = {}) {
   empty.style.display = 'none';
   body.innerHTML = filtered.map(task => {
     const dueClass = dueCls(task.due);
+    const board = boards.find(b => b.id === task.board_id);
+    const boardName = board ? escHtml(board.name) : '—';
     return `
       <tr>
         <td>
           <div class="task-name-cell">${escHtml(task.title)}</div>
           ${task.desc ? `<div class="task-desc-cell">${escHtml(task.desc)}</div>` : ''}
         </td>
+        <td><span class="tracker-board-badge">${boardName}</span></td>
         <td>
           <span class="status-badge status-${task.status}">
             <span class="status-dot" style="background:var(--${task.status})"></span>
@@ -504,7 +536,7 @@ function renderTracker(filter = {}) {
         <td class="due-cell ${dueClass}">${task.due ? formatDate(task.due) : '—'}</td>
         <td>
           <div class="table-actions">
-            <button class="tbl-btn" title="${t('modal-edit')}" onclick="openModal(tasks.find(x=>x.id==='${task.id}'))">
+            <button class="tbl-btn" title="${t('modal-edit')}" onclick="openModal(allTasks.find(x=>x.id==='${task.id}'))">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
                 <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
@@ -522,13 +554,31 @@ function renderTracker(filter = {}) {
   }).join('');
 }
 
+function rebuildBoardFilterMenu() {
+  const menu = document.getElementById('board-drop-menu');
+  if (!menu) return;
+  menu.innerHTML = `
+    <button class="filter-menu-item selected" data-value="" data-label-i18n="filter-all-boards">
+      <svg class="menu-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      <span data-i18n="filter-all-boards">${t('filter-all-boards')}</span>
+    </button>
+    ${boards.map(b => `
+      <button class="filter-menu-item" data-value="${b.id}" data-label-text="${escHtml(b.name)}">
+        <svg class="menu-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        <span class="board-item-dot" style="width:7px;height:7px;border-radius:50%;background:var(--text-faint);flex-shrink:0"></span>
+        <span>${escHtml(b.name)}</span>
+      </button>`).join('')}
+  `;
+}
+
 function bindTracker() {
   const searchInput = document.getElementById('search-input');
   let statusFilter   = '';
   let priorityFilter = '';
+  let boardFilter    = '';
 
   function applyFilter() {
-    renderTracker({ query: searchInput.value, status: statusFilter, priority: priorityFilter });
+    renderTracker({ query: searchInput.value, status: statusFilter, priority: priorityFilter, board: boardFilter });
   }
 
   searchInput.addEventListener('input', applyFilter);
@@ -564,6 +614,36 @@ function bindTracker() {
 
   bindFilterDrop('status-drop-wrap',   'status-drop-menu',   'status-drop-label',   v => { statusFilter   = v; applyFilter(); });
   bindFilterDrop('priority-drop-wrap', 'priority-drop-menu', 'priority-drop-label', v => { priorityFilter = v; applyFilter(); });
+
+  // Board filter — dynamic menu, rebind on each open
+  const boardWrap  = document.getElementById('board-drop-wrap');
+  const boardBtn   = document.getElementById('board-drop-btn');
+  const boardLabel = document.getElementById('board-drop-label');
+
+  boardBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    document.querySelectorAll('.filter-drop-wrap.open').forEach(w => { if (w !== boardWrap) w.classList.remove('open'); });
+    rebuildBoardFilterMenu();
+    const menu = document.getElementById('board-drop-menu');
+    menu.querySelectorAll('.filter-menu-item').forEach(item => {
+      item.addEventListener('click', () => {
+        menu.querySelectorAll('.filter-menu-item').forEach(i => i.classList.remove('selected'));
+        item.classList.add('selected');
+        boardFilter = item.dataset.value;
+        if (boardFilter) {
+          boardLabel.removeAttribute('data-i18n');
+          boardLabel.textContent = item.dataset.labelText || item.querySelector('span:last-child').textContent;
+        } else {
+          boardLabel.dataset.i18n = 'filter-all-boards';
+          boardLabel.textContent  = t('filter-all-boards');
+        }
+        boardBtn.classList.toggle('active', boardFilter !== '');
+        boardWrap.classList.remove('open');
+        applyFilter();
+      });
+    });
+    boardWrap.classList.toggle('open');
+  });
 
   document.addEventListener('click', () => {
     document.querySelectorAll('.filter-drop-wrap.open').forEach(w => w.classList.remove('open'));
@@ -638,6 +718,7 @@ function bindModal() {
       status:   document.getElementById('task-status').value,
       priority: document.getElementById('task-priority').value,
       due:      getDateFromParts(),
+      board_id: currentBoardId,
     };
     if (!data.title) return;
 
@@ -667,6 +748,128 @@ function bindModal() {
   });
 }
 
+// ── Boards ─────────────────────────────────────────────────────────
+function updateBreadcrumbBoard() {
+  const board = boards.find(b => b.id === currentBoardId);
+  const el   = document.getElementById('breadcrumb-board');
+  const wrap = document.getElementById('breadcrumb-board-wrap');
+  if (el)   el.textContent = board ? board.name : '';
+  if (wrap) wrap.classList.toggle('hidden', currentView === 'tracker');
+}
+
+function renderBoards() {
+  updateBreadcrumbBoard();
+  const list = document.getElementById('boards-list');
+  list.innerHTML = '';
+  boards.forEach(board => {
+    const item = document.createElement('div');
+    item.className = 'board-item' + (board.id === currentBoardId ? ' active' : '');
+    item.dataset.id = board.id;
+    item.innerHTML = `
+      <span class="board-item-dot"></span>
+      <span class="board-item-name">${escHtml(board.name)}</span>
+      <div class="board-item-actions">
+        <button class="board-action-btn rename-btn" title="Rename" data-id="${board.id}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12">
+            <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+            <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+          </svg>
+        </button>
+        <button class="board-action-btn delete-btn" title="Delete" data-id="${board.id}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12">
+            <polyline points="3 6 5 6 21 6"/>
+            <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
+            <path d="M9 6V4h6v2"/>
+          </svg>
+        </button>
+      </div>
+    `;
+
+    item.querySelector('.board-item-name').addEventListener('dblclick', e => {
+      e.stopPropagation();
+      startBoardRename(board, item);
+    });
+    item.querySelector('.rename-btn').addEventListener('click', e => {
+      e.stopPropagation();
+      startBoardRename(board, item);
+    });
+    item.querySelector('.delete-btn').addEventListener('click', e => {
+      e.stopPropagation();
+      deleteBoardWithConfirm(board.id);
+    });
+    item.addEventListener('click', () => switchBoard(board.id));
+    list.appendChild(item);
+  });
+}
+
+function startBoardRename(board, item) {
+  const nameSpan = item.querySelector('.board-item-name');
+  const input = document.createElement('input');
+  input.className = 'board-rename-input';
+  input.value = board.name;
+  nameSpan.replaceWith(input);
+  item.classList.add('editing');
+  input.focus();
+  input.select();
+
+  async function save() {
+    const newName = input.value.trim();
+    if (newName && newName !== board.name) {
+      const updated = await api('PATCH', `/boards/${board.id}`, { name: newName });
+      board.name = updated.name;
+      const idx = boards.findIndex(b => b.id === board.id);
+      if (idx !== -1) boards[idx].name = updated.name;
+    }
+    renderBoards();
+    updateBreadcrumbBoard();
+  }
+
+  input.addEventListener('blur', save);
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+    if (e.key === 'Escape') { renderBoards(); }
+  });
+}
+
+async function switchBoard(boardId) {
+  if (boardId === currentBoardId) return;
+  currentBoardId = boardId;
+  renderBoards();
+  await refreshTasks();
+}
+
+async function deleteBoardWithConfirm(boardId) {
+  showConfirm(t('boards-confirm-delete'), async () => {
+    await api('DELETE', `/boards/${boardId}`);
+    boards = boards.filter(b => b.id !== boardId);
+    if (boards.length === 0) {
+      const b = await api('POST', '/boards', { name: t('boards-new-name') });
+      boards = [b];
+    }
+    if (currentBoardId === boardId) {
+      currentBoardId = boards[0].id;
+    }
+    renderBoards();
+    await refreshTasks();
+  });
+}
+
+function bindBoards() {
+  document.getElementById('boards-add-btn').addEventListener('click', async () => {
+    const board = await api('POST', '/boards', { name: t('boards-new-name') });
+    boards.push(board);
+    currentBoardId = board.id;
+    renderBoards();
+    await refreshTasks();
+    const items = document.querySelectorAll('.board-item');
+    const newItem = items[items.length - 1];
+    if (newItem) {
+      const b = boards.find(b => b.id === board.id);
+      startBoardRename(b, newItem);
+    }
+  });
+}
+
 // ── Nav ────────────────────────────────────────────────────────────
 function bindNav() {
   document.querySelectorAll('.nav-btn').forEach(btn => {
@@ -680,6 +883,7 @@ function bindNav() {
         t(currentView === 'kanban' ? 'nav-kanban' : 'nav-tracker');
       document.getElementById('view-subtitle').textContent =
         t(currentView === 'kanban' ? 'subtitle-kanban' : 'subtitle-tracker');
+      updateBreadcrumbBoard();
       if (currentView === 'tracker') renderTracker();
     });
   });

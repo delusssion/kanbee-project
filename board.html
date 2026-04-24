@@ -85,6 +85,17 @@
         <span data-i18n="nav-tracker">Task Tracker</span>
       </button>
     </nav>
+
+    <!-- Boards -->
+    <div class="sidebar-boards">
+      <div class="boards-header">
+        <span class="boards-label" data-i18n="boards-label">Boards</span>
+        <button class="boards-add-btn" id="boards-add-btn" title="New board">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+      </div>
+      <div class="boards-list" id="boards-list"></div>
+    </div>
     <div class="sidebar-footer">
       <div class="task-summary">
         <div class="summary-item">
@@ -108,6 +119,10 @@
       <div class="top-bar-left">
         <div class="view-breadcrumb">
           <span class="breadcrumb-root">KanBee</span>
+          <div class="breadcrumb-board-wrap" id="breadcrumb-board-wrap">
+            <svg class="breadcrumb-sep" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+            <span class="breadcrumb-board" id="breadcrumb-board"></span>
+          </div>
           <svg class="breadcrumb-sep" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
           <h1 class="view-title" id="view-title" data-i18n="nav-kanban">Kanban Board</h1>
         </div>
@@ -175,6 +190,14 @@
             placeholder="Search tasks..." data-i18n-ph="search-ph" />
         </div>
         <div class="tracker-filter-row">
+          <!-- Board dropdown -->
+          <div class="filter-drop-wrap" id="board-drop-wrap">
+            <button class="filter-drop-btn" id="board-drop-btn">
+              <span class="filter-drop-label" id="board-drop-label" data-i18n="filter-all-boards">All Boards</span>
+              <svg class="filter-drop-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="filter-drop-menu" id="board-drop-menu"></div>
+          </div>
           <!-- Status dropdown -->
           <div class="filter-drop-wrap" id="status-drop-wrap">
             <button class="filter-drop-btn" id="status-drop-btn">
@@ -238,6 +261,7 @@
           <thead>
             <tr>
               <th data-i18n="th-task">Task</th>
+              <th data-i18n="th-board">Board</th>
               <th data-i18n="th-status">Status</th>
               <th data-i18n="th-priority">Priority</th>
               <th data-i18n="th-due">Due Date</th>

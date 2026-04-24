@@ -52,15 +52,27 @@ def init_db():
                 )
             """)
             cur.execute("""
+                CREATE TABLE IF NOT EXISTS boards (
+                    id       TEXT PRIMARY KEY,
+                    user_id  TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                    name     TEXT NOT NULL,
+                    position INT  NOT NULL DEFAULT 0
+                )
+            """)
+            cur.execute("""
                 CREATE TABLE IF NOT EXISTS tasks (
                     id          TEXT PRIMARY KEY,
                     user_id     TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                    board_id    TEXT REFERENCES boards(id) ON DELETE CASCADE,
                     title       TEXT NOT NULL,
                     description TEXT,
                     status      TEXT NOT NULL,
                     priority    TEXT NOT NULL,
                     due         TEXT
                 )
+            """)
+            cur.execute("""
+                ALTER TABLE tasks ADD COLUMN IF NOT EXISTS board_id TEXT REFERENCES boards(id) ON DELETE CASCADE
             """)
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS user_settings (
@@ -70,6 +82,25 @@ def init_db():
                     default_view TEXT NOT NULL DEFAULT 'kanban'
                 )
             """)
+    _migrate_orphan_tasks()
+
+
+def _migrate_orphan_tasks():
+    with _conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute("SELECT DISTINCT user_id FROM tasks WHERE board_id IS NULL")
+            rows = cur.fetchall()
+            for row in rows:
+                uid = row['user_id']
+                board_id = uuid4().hex
+                cur.execute(
+                    "INSERT INTO boards (id, user_id, name, position) VALUES (%s, %s, %s, 0)",
+                    (board_id, uid, 'My Board'),
+                )
+                cur.execute(
+                    "UPDATE tasks SET board_id = %s WHERE user_id = %s AND board_id IS NULL",
+                    (board_id, uid),
+                )
 
 
 # ── Users ──────────────────────────────────────────────────────────
@@ -126,6 +157,55 @@ def delete_session(session_id: str):
             cur.execute('DELETE FROM sessions WHERE session_id = %s', (session_id,))
 
 
+# ── Boards ─────────────────────────────────────────────────────────
+
+def create_board(user_id: str, name: str) -> dict:
+    board_id = uuid4().hex
+    with _conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                "SELECT COALESCE(MAX(position)+1, 0) AS pos FROM boards WHERE user_id = %s",
+                (user_id,),
+            )
+            pos = cur.fetchone()['pos']
+            cur.execute(
+                "INSERT INTO boards (id, user_id, name, position) VALUES (%s, %s, %s, %s) RETURNING *",
+                (board_id, user_id, name.strip(), pos),
+            )
+            return dict(cur.fetchone())
+
+
+def get_boards(user_id: str) -> list:
+    with _conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                "SELECT * FROM boards WHERE user_id = %s ORDER BY position, id",
+                (user_id,),
+            )
+            return [dict(r) for r in cur.fetchall()]
+
+
+def rename_board(board_id: str, user_id: str, name: str) -> Optional[dict]:
+    with _conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                "UPDATE boards SET name = %s WHERE id = %s AND user_id = %s RETURNING *",
+                (name.strip(), board_id, user_id),
+            )
+            row = cur.fetchone()
+    return dict(row) if row else None
+
+
+def delete_board(board_id: str, user_id: str) -> bool:
+    with _conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "DELETE FROM boards WHERE id = %s AND user_id = %s",
+                (board_id, user_id),
+            )
+            return cur.rowcount > 0
+
+
 # ── Tasks ──────────────────────────────────────────────────────────
 
 def _row_to_task(row: dict) -> Task:
@@ -136,6 +216,7 @@ def _row_to_task(row: dict) -> Task:
         status=row['status'],
         priority=row['priority'],
         due=row['due'],
+        board_id=row.get('board_id'),
     )
 
 
@@ -144,17 +225,23 @@ def create_task(data: TaskCreate, user_id: str) -> Task:
     with _conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(
-                """INSERT INTO tasks (id, user_id, title, description, status, priority, due)
-                   VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING *""",
-                (task_id, user_id, data.title, data.desc, data.status, data.priority, data.due),
+                """INSERT INTO tasks (id, user_id, board_id, title, description, status, priority, due)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s) RETURNING *""",
+                (task_id, user_id, data.board_id, data.title, data.desc, data.status, data.priority, data.due),
             )
             return _row_to_task(cur.fetchone())
 
 
-def get_all_tasks(user_id: str) -> List[Task]:
+def get_all_tasks(user_id: str, board_id: Optional[str] = None) -> List[Task]:
     with _conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            cur.execute('SELECT * FROM tasks WHERE user_id = %s ORDER BY id', (user_id,))
+            if board_id:
+                cur.execute(
+                    'SELECT * FROM tasks WHERE user_id = %s AND board_id = %s ORDER BY id',
+                    (user_id, board_id),
+                )
+            else:
+                cur.execute('SELECT * FROM tasks WHERE user_id = %s ORDER BY id', (user_id,))
             return [_row_to_task(r) for r in cur.fetchall()]
 
 
