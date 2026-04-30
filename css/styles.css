@@ -105,32 +105,21 @@ body { display: flex; height: 100vh; }
 .sidebar-logo {
   display: flex;
   align-items: center;
-  gap: 12px;
   padding: 18px 20px;
   border-bottom: 1px solid var(--border-soft);
   min-height: 72px;
 }
 
-.logo-bee-svg {
-  width: 42px;
-  height: 48px;
-  flex-shrink: 0;
+.logo-img {
+  width: 100%;
+  height: auto;
+  display: block;
 }
 
-.logo-text {
-  font-family: 'Lora', Georgia, serif;
-  font-size: 30px;
-  font-weight: 700;
-  letter-spacing: -0.5px;
-  line-height: 1;
-}
+.logo-img-dark { display: none; }
 
-.logo-kan {
-  color: #6B3F0A;
-}
-.logo-bee-word {
-  color: #C9820A;
-}
+html[data-theme="dark"] .logo-img-light { display: none; }
+html[data-theme="dark"] .logo-img-dark  { display: block; }
 
 html[data-theme="dark"] .logo-kan {
   color: #B07030;
@@ -1763,21 +1752,12 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .auth-panel-top { position: relative; z-index: 1; }
 
 .auth-logo {
-  display: flex; align-items: center; gap: 10px;
+  display: flex; align-items: center;
   margin-bottom: 64px;
 }
-.auth-logo-mark {
-  width: 36px; height: 36px; border-radius: 10px;
-  background: #C9820A;
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-}
-.auth-logo-bee { width: 20px; height: 20px; }
-.auth-logo-name {
-  font-family: 'Lora', serif;
-  font-weight: 600; font-size: 20px;
-  color: #2C2318; letter-spacing: -.3px;
-}
+.auth-logo .logo-img { width: 160px; height: auto; }
+.auth-logo .logo-img-dark  { display: none !important; }
+.auth-logo .logo-img-light { display: block !important; }
 
 .auth-tagline {
   font-family: 'Lora', serif;
