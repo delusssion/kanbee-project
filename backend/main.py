@@ -37,6 +37,7 @@ def health():
 
 app.mount('/css', StaticFiles(directory=ROOT_DIR / 'css'), name='css')
 app.mount('/js', StaticFiles(directory=ROOT_DIR / 'js'), name='js')
+app.mount('/img', StaticFiles(directory=ROOT_DIR / 'img'), name='img')
 
 
 @app.get('/')
