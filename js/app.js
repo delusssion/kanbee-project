@@ -118,6 +118,7 @@ const TRANSLATIONS = {
     'settings-confirm-delete-task': 'Do you really want to delete this task? This action cannot be undone.',
     'boards-label':            'Boards',
     'boards-new-name':         'New Board',
+    'boards-add':              'Add board',
     'boards-confirm-delete':   'Delete this board and all its tasks? This cannot be undone.',
     'settings-change-pwd':     'Change password',
     'settings-forgot-pwd':     'Forgot password?',
@@ -188,6 +189,7 @@ const TRANSLATIONS = {
     'settings-confirm-delete-task': 'Вы действительно хотите удалить данную задачу? Это действие нельзя отменить.',
     'boards-label':            'Доски',
     'boards-new-name':         'Новая доска',
+    'boards-add':              'Добавить доску',
     'boards-confirm-delete':   'Удалить эту доску и все её задачи? Это необратимо.',
     'settings-change-pwd':     'Сменить пароль',
     'settings-forgot-pwd':     'Забыл пароль?',
@@ -855,6 +857,18 @@ async function deleteBoardWithConfirm(boardId) {
 }
 
 function bindBoards() {
+  const wrap = document.querySelector('.nav-kanban-wrap');
+  let closeTimer = null;
+
+  wrap.addEventListener('mouseenter', () => {
+    clearTimeout(closeTimer);
+    wrap.classList.add('open');
+  });
+
+  wrap.addEventListener('mouseleave', () => {
+    closeTimer = setTimeout(() => wrap.classList.remove('open'), 120);
+  });
+
   document.getElementById('boards-add-btn').addEventListener('click', async () => {
     const board = await api('POST', '/boards', { name: t('boards-new-name') });
     boards.push(board);
