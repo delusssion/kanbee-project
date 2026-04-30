@@ -73,10 +73,19 @@ async function loadSettings() {
 }
 
 
+function uniqueBoardName(baseName) {
+  const base = baseName.replace(/ \(\d+\)$/, '').trim();
+  const taken = name => boards.some(b => b.name === name);
+  if (!taken(base)) return base;
+  let n = 1;
+  while (taken(`${base} (${n})`)) n++;
+  return `${base} (${n})`;
+}
+
 async function loadBoards() {
   boards = await api('GET', '/boards');
   if (boards.length === 0) {
-    const b = await api('POST', '/boards', { name: 'My Board' });
+    const b = await api('POST', '/boards', { name: t('boards-new-name') });
     boards = [b];
   }
   currentBoardId = boards[0].id;
@@ -125,7 +134,7 @@ const TRANSLATIONS = {
     'settings-pwd-current-ph': 'Current password',
     'settings-pwd-new-ph':     'New password (8+ chars, letter + digit)',
     'settings-pwd-success':    'Password changed',
-    'nav-kanban':          'Kanban Board',
+    'nav-kanban':          'Kanban Boards',
     'nav-tracker':         'Task Tracker',
     'subtitle-kanban':     'Drag cards between columns to update status',
     'subtitle-tracker':    'Filter, search and manage all tasks',
@@ -196,7 +205,7 @@ const TRANSLATIONS = {
     'settings-pwd-current-ph': 'Текущий пароль',
     'settings-pwd-new-ph':     'Новый пароль (8+ симв., буква и цифра)',
     'settings-pwd-success':    'Пароль изменён',
-    'nav-kanban':          'Канбан-доска',
+    'nav-kanban':          'Канбан-доски',
     'nav-tracker':         'Трекер задач',
     'subtitle-kanban':     'Перетащите карточки между колонками для смены статуса',
     'subtitle-tracker':    'Фильтрация, поиск и управление задачами',
@@ -870,7 +879,7 @@ function bindBoards() {
   });
 
   document.getElementById('boards-add-btn').addEventListener('click', async () => {
-    const board = await api('POST', '/boards', { name: t('boards-new-name') });
+    const board = await api('POST', '/boards', { name: uniqueBoardName(t('boards-new-name')) });
     boards.push(board);
     currentBoardId = board.id;
     renderBoards();
