@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KanBee</title>
+  <link rel="stylesheet" href="css/styles.css?v=7" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <img class="logo-img logo-img-light" src="img/logo-light.png" alt="KanBee" />
+      <img class="logo-img logo-img-dark"  src="img/logo-dark.png"  alt="KanBee" />
+    </div>
+    <!-- Profile -->
+    <div class="profile-area" id="profile-area">
+      <button class="profile-btn" id="profile-btn">
+        <div class="profile-avatar" id="profile-avatar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+        </div>
+        <span class="profile-name" id="profile-name">Guest</span>
+        <svg class="profile-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="profile-dropdown" id="profile-dropdown">
+        <!-- Main items -->
+        <div id="dropdown-main-view">
+          <button class="dropdown-item" id="dropdown-auth-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+            <span id="dropdown-auth-label" data-i18n="signin">Sign in</span>
+          </button>
+          <button class="dropdown-item" id="dropdown-open-settings">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+            <span data-i18n="settings">Settings</span>
+          </button>
+        </div>
+        <!-- Sign in form -->
+        <div id="dropdown-signin-view" style="display:none">
+          <p class="dropdown-signin-label" data-i18n="settings-name-ph">Your name</p>
+          <input class="settings-input dropdown-name-input" type="text" id="dropdown-name-input" maxlength="30" />
+          <div class="dropdown-form-btns">
+            <button class="btn btn-ghost btn-sm" id="dropdown-signin-cancel" data-i18n="btn-cancel">Cancel</button>
+            <button class="btn btn-primary btn-sm" id="dropdown-signin-save" data-i18n="settings-save">Save</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-kanban-wrap">
+        <button class="nav-btn active" data-view="kanban">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="5" height="18" rx="1"/><rect x="10" y="3" width="5" height="12" rx="1"/><rect x="17" y="3" width="5" height="15" rx="1"/></svg>
+          <span data-i18n="nav-kanban">Kanban Boards</span>
+          <svg class="nav-btn-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="nav-boards-dropdown">
+          <div class="nav-boards-list" id="boards-list"></div>
+          <button class="nav-boards-add-btn" id="boards-add-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <span data-i18n="boards-add">Add board</span>
+          </button>
+        </div>
+      </div>
+      <button class="nav-btn" data-view="tracker">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+        <span data-i18n="nav-tracker">Task Tracker</span>
+      </button>
+    </nav>
+    <div class="sidebar-spacer"></div>
+    <div class="sidebar-footer">
+      <div class="task-summary">
+        <div class="summary-item">
+          <span class="summary-count" id="count-todo">0</span>
+          <span class="summary-label" data-i18n="col-todo">To Do</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-count" id="count-inprocess">0</span>
+          <span class="summary-label" data-i18n="col-inprocess">In Process</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-count" id="count-done">0</span>
+          <span class="summary-label" data-i18n="col-done">Done</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="top-bar">
+      <div class="top-bar-left">
+        <div class="view-breadcrumb">
+          <span class="breadcrumb-root">KanBee</span>
+          <div class="breadcrumb-board-wrap" id="breadcrumb-board-wrap">
+            <svg class="breadcrumb-sep" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+            <span class="breadcrumb-board" id="breadcrumb-board"></span>
+          </div>
+          <svg class="breadcrumb-sep" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+          <h1 class="view-title" id="view-title" data-i18n="nav-kanban">Kanban Boards</h1>
+        </div>
+        <span class="view-subtitle" id="view-subtitle" data-i18n="subtitle-kanban">Drag cards between columns to update status</span>
+      </div>
+      <div class="top-bar-right">
+        <button class="btn btn-ghost clear-all-btn" id="clear-all-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+          <span data-i18n="settings-clear">Clear all tasks</span>
+        </button>
+        <button class="btn btn-primary" id="add-task-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <span data-i18n="btn-new-task">New Task</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Kanban View -->
+    <section class="view active" id="view-kanban">
+      <div class="kanban-board">
+        <div class="kanban-column" id="col-todo" data-status="todo">
+          <div class="column-header">
+            <div class="column-title">
+              <span class="column-dot dot-todo"></span>
+              <span data-i18n="col-todo">To Do</span>
+            </div>
+            <span class="column-count" id="badge-todo">0</span>
+          </div>
+          <div class="card-list cards-list" id="list-todo" data-status="todo"></div>
+          <button class="add-card-btn" data-status="todo" data-i18n="add-card">+ Add task</button>
+        </div>
+
+        <div class="kanban-column" id="col-inprocess" data-status="inprocess">
+          <div class="column-header">
+            <div class="column-title">
+              <span class="column-dot dot-inprocess"></span>
+              <span data-i18n="col-inprocess">In Process</span>
+            </div>
+            <span class="column-count" id="badge-inprocess">0</span>
+          </div>
+          <div class="card-list cards-list" id="list-inprocess" data-status="inprocess"></div>
+          <button class="add-card-btn" data-status="inprocess" data-i18n="add-card">+ Add task</button>
+        </div>
+
+        <div class="kanban-column" id="col-done" data-status="done">
+          <div class="column-header">
+            <div class="column-title">
+              <span class="column-dot dot-done"></span>
+              <span data-i18n="col-done">Done</span>
+            </div>
+            <span class="column-count" id="badge-done">0</span>
+          </div>
+          <div class="card-list cards-list" id="list-done" data-status="done"></div>
+          <button class="add-card-btn" data-status="done" data-i18n="add-card">+ Add task</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Task Tracker View -->
+    <section class="view" id="view-tracker">
+      <div class="tracker-toolbar">
+        <div class="search-wrap">
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input class="search-input" id="search-input" type="text"
+            placeholder="Search tasks..." data-i18n-ph="search-ph" />
+        </div>
+        <div class="tracker-filter-row">
+          <!-- Board dropdown -->
+          <div class="filter-drop-wrap" id="board-drop-wrap">
+            <button class="filter-drop-btn" id="board-drop-btn">
+              <span class="filter-drop-label" id="board-drop-label" data-i18n="filter-all-boards">All Boards</span>
+              <svg class="filter-drop-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="filter-drop-menu" id="board-drop-menu"></div>
+          </div>
+          <!-- Status dropdown -->
+          <div class="filter-drop-wrap" id="status-drop-wrap">
+            <button class="filter-drop-btn" id="status-drop-btn">
+              <span class="filter-drop-label" id="status-drop-label" data-i18n="th-status">Status</span>
+              <svg class="filter-drop-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="filter-drop-menu" id="status-drop-menu">
+              <button class="filter-menu-item selected" data-value="" data-label-i18n="th-status">
+                <svg class="menu-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                <span data-i18n="filter-all">All</span>
+              </button>
+              <button class="filter-menu-item" data-value="todo" data-label-i18n="col-todo">
+                <svg class="menu-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                <span class="chip-dot chip-dot-todo"></span>
+                <span data-i18n="col-todo">To Do</span>
+              </button>
+              <button class="filter-menu-item" data-value="inprocess" data-label-i18n="col-inprocess">
+                <svg class="menu-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                <span class="chip-dot chip-dot-inprocess"></span>
+                <span data-i18n="col-inprocess">In Process</span>
+              </button>
+              <button class="filter-menu-item" data-value="done" data-label-i18n="col-done">
+                <svg class="menu-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                <span class="chip-dot chip-dot-done"></span>
+                <span data-i18n="col-done">Done</span>
+              </button>
+            </div>
+          </div>
+          <!-- Priority dropdown -->
+          <div class="filter-drop-wrap" id="priority-drop-wrap">
+            <button class="filter-drop-btn" id="priority-drop-btn">
+              <span class="filter-drop-label" id="priority-drop-label" data-i18n="th-priority">Priority</span>
+              <svg class="filter-drop-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="filter-drop-menu" id="priority-drop-menu">
+              <button class="filter-menu-item selected" data-value="" data-label-i18n="th-priority">
+                <svg class="menu-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                <span data-i18n="filter-all">All</span>
+              </button>
+              <button class="filter-menu-item" data-value="high" data-label-i18n="pri-high">
+                <svg class="menu-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                <svg class="pri-menu-icon" viewBox="0 0 10 10" style="color:var(--high)"><polygon points="5,1 9,9 1,9" fill="currentColor"/></svg>
+                <span data-i18n="pri-high">High</span>
+              </button>
+              <button class="filter-menu-item" data-value="medium" data-label-i18n="pri-medium">
+                <svg class="menu-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                <svg class="pri-menu-icon" viewBox="0 0 10 10" style="color:var(--medium)"><circle cx="5" cy="5" r="4" fill="currentColor"/></svg>
+                <span data-i18n="pri-medium">Medium</span>
+              </button>
+              <button class="filter-menu-item" data-value="low" data-label-i18n="pri-low">
+                <svg class="menu-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                <svg class="pri-menu-icon" viewBox="0 0 10 10" style="color:var(--low)"><polygon points="5,9 9,1 1,1" fill="currentColor"/></svg>
+                <span data-i18n="pri-low">Low</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="tracker-table-wrap">
+        <table class="tracker-table">
+          <thead>
+            <tr>
+              <th data-i18n="th-task">Task</th>
+              <th data-i18n="th-board">Board</th>
+              <th data-i18n="th-status">Status</th>
+              <th data-i18n="th-priority">Priority</th>
+              <th data-i18n="th-due">Due Date</th>
+              <th data-i18n="th-actions">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="tracker-body"></tbody>
+        </table>
+        <div class="empty-state" id="tracker-empty">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+          <p data-i18n="empty-text">No tasks yet. Create your first task.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Modal -->
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal" id="modal">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modal-title" data-i18n="modal-new">New Task</h2>
+        <button class="modal-close" id="modal-close">&times;</button>
+      </div>
+      <form class="modal-form" id="task-form">
+        <input type="hidden" id="task-id" />
+        <div class="form-group">
+          <label for="task-title"><span data-i18n="lbl-title">Title</span> <span class="required">*</span></label>
+          <input type="text" id="task-title"
+            placeholder="Task title" data-i18n-ph="ph-title" required />
+        </div>
+        <div class="form-group">
+          <label for="task-desc" data-i18n="lbl-desc">Description</label>
+          <textarea id="task-desc" rows="3"
+            placeholder="Optional description..." data-i18n-ph="ph-desc"></textarea>
+        </div>
+        <div class="form-group">
+          <label data-i18n="lbl-status">Status</label>
+          <div class="seg-group" id="status-group" data-input="task-status">
+            <button type="button" class="seg-btn seg-todo" data-value="todo">
+              <span class="seg-dot"></span><span data-i18n="col-todo">To Do</span>
+            </button>
+            <button type="button" class="seg-btn seg-inprocess" data-value="inprocess">
+              <span class="seg-dot"></span><span data-i18n="col-inprocess">In Process</span>
+            </button>
+            <button type="button" class="seg-btn seg-done" data-value="done">
+              <span class="seg-dot"></span><span data-i18n="col-done">Done</span>
+            </button>
+          </div>
+          <input type="hidden" id="task-status" value="todo" />
+        </div>
+        <div class="form-row-2">
+          <div class="form-group">
+            <label data-i18n="lbl-priority">Priority</label>
+            <div class="seg-group" id="priority-group" data-input="task-priority">
+              <button type="button" class="seg-btn seg-high" data-value="high">
+                <svg viewBox="0 0 10 10"><polygon points="5,1 9,9 1,9" fill="currentColor"/></svg>
+                <span data-i18n="pri-high">High</span>
+              </button>
+              <button type="button" class="seg-btn seg-medium" data-value="medium">
+                <svg viewBox="0 0 10 10"><circle cx="5" cy="5" r="4" fill="currentColor"/></svg>
+                <span data-i18n="pri-medium">Medium</span>
+              </button>
+              <button type="button" class="seg-btn seg-low" data-value="low">
+                <svg viewBox="0 0 10 10"><polygon points="5,9 9,1 1,1" fill="currentColor"/></svg>
+                <span data-i18n="pri-low">Low</span>
+              </button>
+            </div>
+            <input type="hidden" id="task-priority" value="medium" />
+          </div>
+          <div class="form-group">
+            <label data-i18n="lbl-due">Due Date</label>
+            <div class="date-inputs" id="date-inputs-wrap">
+              <input class="date-part" id="task-due-day"   type="number" placeholder="DD"   min="1"    max="31"   />
+              <span class="date-sep">/</span>
+              <input class="date-part" id="task-due-month" type="number" placeholder="MM"   min="1"    max="12"   />
+              <span class="date-sep">/</span>
+              <input class="date-part" id="task-due-year"  type="number" placeholder="YYYY" min="2000" max="2099" />
+            </div>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-ghost" id="modal-cancel" data-i18n="btn-cancel">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="modal-submit" data-i18n="btn-create">Create Task</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div class="settings-overlay" id="settings-overlay">
+    <div class="settings-panel" id="settings-panel">
+      <div class="settings-header">
+        <h2 class="settings-title" data-i18n="settings">Settings</h2>
+        <button class="settings-close" id="settings-close">&times;</button>
+      </div>
+
+      <!-- Profile -->
+      <div class="settings-section">
+        <div class="settings-section-label" data-i18n="settings-account">Account</div>
+        <div class="settings-user-row">
+          <div class="settings-user-avatar" id="settings-user-avatar"></div>
+          <div class="settings-user-info">
+            <div class="settings-user-name" id="settings-user-name"></div>
+            <div class="settings-user-label" data-i18n="settings-local-profile">Local profile</div>
+          </div>
+          <button class="btn btn-ghost btn-sm" id="settings-pwd-btn" data-i18n="settings-change-pwd">Change password</button>
+        </div>
+        <div class="settings-pwd-form" id="settings-pwd-form">
+          <input class="settings-input" type="password" id="settings-pwd-current" placeholder="Current password" data-i18n-ph="settings-pwd-current-ph" />
+          <input class="settings-input" type="password" id="settings-pwd-new" placeholder="New password" data-i18n-ph="settings-pwd-new-ph" />
+          <p class="settings-pwd-error" id="settings-pwd-error"></p>
+          <div class="settings-pwd-actions">
+            <button class="btn btn-ghost btn-sm settings-pwd-forgot" id="settings-pwd-forgot" data-i18n="settings-forgot-pwd">Forgot password?</button>
+            <div class="settings-pwd-actions-right">
+              <button class="btn btn-ghost btn-sm" id="settings-pwd-cancel" data-i18n="btn-cancel">Cancel</button>
+              <button class="btn btn-primary btn-sm" id="settings-pwd-save" data-i18n="settings-save">Save</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Appearance -->
+      <div class="settings-section">
+        <div class="settings-section-label" data-i18n="settings-appearance">Appearance</div>
+        <div class="settings-row">
+          <span class="settings-row-label" data-i18n="settings-lang">Language</span>
+          <div class="settings-seg-group" id="lang-seg">
+            <button class="settings-seg-btn" data-lang="en">EN</button>
+            <button class="settings-seg-btn" data-lang="ru">RU</button>
+          </div>
+        </div>
+        <div class="settings-row">
+          <span class="settings-row-label" data-i18n="settings-theme">Theme</span>
+          <div class="settings-seg-group" id="theme-seg">
+            <button class="settings-seg-btn" data-theme-val="light" data-i18n="theme-light">Light</button>
+            <button class="settings-seg-btn" data-theme-val="dark" data-i18n="theme-dark">Dark</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Preferences -->
+      <div class="settings-section">
+        <div class="settings-section-label" data-i18n="settings-prefs">Preferences</div>
+        <div class="settings-row">
+          <span class="settings-row-label" data-i18n="settings-default-view">Default view</span>
+          <div class="settings-seg-group" id="defview-seg">
+            <button class="settings-seg-btn" data-defview="kanban" data-i18n="nav-kanban">Kanban Boards</button>
+            <button class="settings-seg-btn" data-defview="tracker" data-i18n="nav-tracker">Task Tracker</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Custom Confirm -->
+  <div class="confirm-overlay" id="confirm-overlay">
+    <div class="confirm-modal">
+      <div class="confirm-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </div>
+      <h3 class="confirm-title" data-i18n="confirm-title">Are you sure?</h3>
+      <p class="confirm-message" id="confirm-message"></p>
+      <div class="confirm-actions">
+        <button class="btn btn-ghost" id="confirm-cancel-btn" data-i18n="btn-cancel">Cancel</button>
+        <button class="btn btn-danger" id="confirm-ok-btn" data-i18n="confirm-delete">Delete</button>
+      </div>
+    </div>
+  </div>
+
+
+  <script src="js/app.js?v=7"></script>
+</body>
+</html>
