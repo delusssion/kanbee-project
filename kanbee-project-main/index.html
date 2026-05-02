@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>KanBee</title>
+  <script>
+    fetch('/auth/me', { credentials: 'include' })
+      .then(r => r.ok
+        ? window.location.replace('/board')
+        : window.location.replace('/registration'))
+      .catch(() => window.location.replace('/registration'));
+  </script>
+</head>
+<body></body>
+</html>
