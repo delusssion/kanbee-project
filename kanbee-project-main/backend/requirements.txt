@@ -1,8 +1,0 @@
-fastapi
-uvicorn
-pydantic>=2,<3
-psycopg2-binary
-bcrypt
-httpx
-pytest
-python-dotenv

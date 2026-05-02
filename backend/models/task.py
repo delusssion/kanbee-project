@@ -53,6 +53,7 @@ class TaskUpdate(BaseModel):
     status: Optional[Status] = None
     priority: Optional[Priority] = None
     due: Optional[str] = None
+    board_id: Optional[str] = None
 
     @field_validator('title')
     @classmethod

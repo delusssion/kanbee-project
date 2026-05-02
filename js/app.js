@@ -1,3 +1,26 @@
+// ── Password toggle ─────────────────────────────────────────────────
+function bindPasswordToggles(root = document) {
+  const eyeOpen = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+  const eyeOff  = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
+  root.querySelectorAll('input[type="password"]:not(.pwd-toggle-bound)').forEach(input => {
+    input.classList.add('pwd-toggle-bound');
+    const wrap = document.createElement('div');
+    wrap.className = 'pwd-wrap';
+    input.parentNode.insertBefore(wrap, input);
+    wrap.appendChild(input);
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'pwd-toggle-btn';
+    btn.innerHTML = eyeOpen;
+    wrap.appendChild(btn);
+    btn.addEventListener('click', () => {
+      const show = input.type === 'password';
+      input.type = show ? 'text' : 'password';
+      btn.innerHTML = show ? eyeOff : eyeOpen;
+    });
+  });
+}
+
 // ── API ────────────────────────────────────────────────────────────
 const API_BASE = '';
 
@@ -115,6 +138,7 @@ const TRANSLATIONS = {
     'settings-lang':          'Language',
     'settings-theme':         'Theme',
     'settings-default-view':  'Default view',
+    'settings-data':          'Data',
     'settings-export':        'Export JSON',
     'settings-import':        'Import JSON',
     'settings-clear':         'Clear all tasks',
@@ -186,6 +210,7 @@ const TRANSLATIONS = {
     'settings-lang':          'Язык',
     'settings-theme':         'Тема',
     'settings-default-view':  'Вид по умолчанию',
+    'settings-data':          'Данные',
     'settings-export':        'Экспорт JSON',
     'settings-import':        'Импорт JSON',
     'settings-clear':         'Очистить задачи',
@@ -975,6 +1000,7 @@ function openSettings() {
   document.getElementById('settings-pwd-new').value = '';
   document.getElementById('settings-pwd-error').textContent = '';
   document.getElementById('settings-overlay').classList.add('open');
+  bindPasswordToggles(document.getElementById('settings-panel'));
 }
 
 function closeSettings() {
@@ -1043,6 +1069,38 @@ function bindSettings() {
   });
   document.getElementById('settings-pwd-forgot').addEventListener('click', () => {
     window.location.href = '/reset-password';
+  });
+
+  // Export
+  document.getElementById('settings-export-btn').addEventListener('click', async () => {
+    const res = await fetch('/tasks/export', { credentials: 'include' });
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'kanbee-tasks.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  // Import
+  const importFileInput = document.getElementById('settings-import-file');
+  document.getElementById('settings-import-btn').addEventListener('click', () => {
+    importFileInput.value = '';
+    importFileInput.click();
+  });
+  importFileInput.addEventListener('change', async () => {
+    const file = importFileInput.files[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      await api('POST', '/tasks/import', data);
+      await refreshTasks();
+      closeSettings();
+    } catch {
+      alert('Ошибка импорта. Проверьте формат файла.');
+    }
   });
   document.getElementById('settings-pwd-save').addEventListener('click', async () => {
     const current = document.getElementById('settings-pwd-current').value;

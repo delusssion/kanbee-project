@@ -1961,6 +1961,18 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   .auth-panel-left { width: 100%; min-height: auto; padding: 36px 28px; }
   .auth-panel-right { width: 100%; min-height: auto; padding: 36px 28px; flex: 1; }
 }
+
+/* ── Password toggle ───────────────────────────────────────────────── */
+.pwd-wrap { position: relative; display: flex; align-items: center; }
+.pwd-wrap input { padding-right: 40px !important; width: 100%; }
+.pwd-toggle-btn {
+  position: absolute; right: 10px;
+  background: none; border: none; cursor: pointer;
+  color: var(--text-muted, #7878a8);
+  display: flex; align-items: center;
+  padding: 4px; flex-shrink: 0; line-height: 1;
+}
+.pwd-toggle-btn:hover { color: var(--text, #e8e8f6); }
 .confirm-actions .btn { min-width: 90px; justify-content: center; }
 
 /* ── Mobile / Tablet ───────────────────────────────────────────────── */
