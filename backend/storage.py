@@ -1,5 +1,6 @@
 import os
 from contextlib import contextmanager
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 from uuid import uuid4
 
@@ -82,6 +83,32 @@ def init_db():
                     default_view TEXT NOT NULL DEFAULT 'kanban'
                 )
             """)
+            cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT UNIQUE")
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS password_reset_codes (
+                    id         TEXT PRIMARY KEY,
+                    email      TEXT NOT NULL,
+                    code       TEXT NOT NULL,
+                    expires_at TIMESTAMPTZ NOT NULL,
+                    used       BOOLEAN NOT NULL DEFAULT FALSE
+                )
+            """)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS password_history (
+                    id         TEXT PRIMARY KEY,
+                    user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                    pw_hash    TEXT NOT NULL,
+                    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                )
+            """)
+            cur.execute("""
+                ALTER TABLE password_reset_codes ADD COLUMN IF NOT EXISTS
+                    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            """)
+            cur.execute("""
+                ALTER TABLE password_reset_codes ADD COLUMN IF NOT EXISTS
+                    attempts INT NOT NULL DEFAULT 0
+            """)
     _migrate_orphan_tasks()
 
 
@@ -127,7 +154,7 @@ def get_user_by_username(username: str) -> Optional[dict]:
 def get_user_by_id(user_id: str) -> Optional[dict]:
     with _conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            cur.execute('SELECT id, username FROM users WHERE id = %s', (user_id,))
+            cur.execute('SELECT id, username, email FROM users WHERE id = %s', (user_id,))
             row = cur.fetchone()
     return dict(row) if row else None
 
@@ -183,6 +210,17 @@ def get_boards(user_id: str) -> list:
                 (user_id,),
             )
             return [dict(r) for r in cur.fetchall()]
+
+
+def get_board(board_id: str, user_id: str) -> Optional[dict]:
+    with _conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                "SELECT * FROM boards WHERE id = %s AND user_id = %s",
+                (board_id, user_id),
+            )
+            row = cur.fetchone()
+    return dict(row) if row else None
 
 
 def rename_board(board_id: str, user_id: str, name: str) -> Optional[dict]:
@@ -324,3 +362,114 @@ def update_password(user_id: str, password_hash: str):
     with _conn() as conn:
         with conn.cursor() as cur:
             cur.execute('UPDATE users SET password_hash = %s WHERE id = %s', (password_hash, user_id))
+
+
+# ── Email auth ─────────────────────────────────────────────────────
+
+def get_user_by_email(email: str) -> Optional[dict]:
+    with _conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute('SELECT * FROM users WHERE email = %s', (email,))
+            row = cur.fetchone()
+    return dict(row) if row else None
+
+
+def create_user_with_email(email: str, password_hash: str) -> dict:
+    user_id = uuid4().hex
+    base = email.split('@')[0]
+    with _conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute('SELECT 1 FROM users WHERE username = %s', (base,))
+            username = base if not cur.fetchone() else f'{base}_{user_id[:6]}'
+            cur.execute(
+                'INSERT INTO users (id, username, email, password_hash) VALUES (%s, %s, %s, %s)'
+                ' RETURNING id, username, email',
+                (user_id, username, email, password_hash),
+            )
+            return dict(cur.fetchone())
+
+
+# ── Password reset codes ───────────────────────────────────────────
+
+def create_reset_code(email: str, code: str, expires_at) -> str:
+    code_id = uuid4().hex
+    with _conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                'UPDATE password_reset_codes SET used = TRUE WHERE email = %s AND used = FALSE',
+                (email,),
+            )
+            cur.execute(
+                'INSERT INTO password_reset_codes (id, email, code, expires_at) VALUES (%s, %s, %s, %s)',
+                (code_id, email, code, expires_at),
+            )
+    return code_id
+
+
+def has_recent_reset_code(email: str, within_seconds: int) -> bool:
+    cutoff = datetime.now(timezone.utc) - timedelta(seconds=within_seconds)
+    with _conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                'SELECT 1 FROM password_reset_codes WHERE email = %s AND created_at > %s LIMIT 1',
+                (email, cutoff),
+            )
+            return cur.fetchone() is not None
+
+
+def get_active_reset_code(email: str) -> Optional[dict]:
+    with _conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                'SELECT * FROM password_reset_codes'
+                ' WHERE email = %s AND used = FALSE AND expires_at > NOW()'
+                ' ORDER BY created_at DESC LIMIT 1',
+                (email,),
+            )
+            row = cur.fetchone()
+    return dict(row) if row else None
+
+
+def increment_reset_attempts(code_id: str) -> int:
+    with _conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                'UPDATE password_reset_codes SET attempts = attempts + 1 WHERE id = %s RETURNING attempts',
+                (code_id,),
+            )
+            row = cur.fetchone()
+    return row[0] if row else 0
+
+
+def delete_reset_code(code_id: str):
+    with _conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute('DELETE FROM password_reset_codes WHERE id = %s', (code_id,))
+
+
+def mark_reset_code_used(code_id: str):
+    with _conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute('UPDATE password_reset_codes SET used = TRUE WHERE id = %s', (code_id,))
+
+
+# ── Password history ───────────────────────────────────────────────
+
+def add_password_history(user_id: str, pw_hash: str):
+    history_id = uuid4().hex
+    with _conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                'INSERT INTO password_history (id, user_id, pw_hash) VALUES (%s, %s, %s)',
+                (history_id, user_id, pw_hash),
+            )
+
+
+def get_password_history(user_id: str) -> list:
+    with _conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                'SELECT pw_hash FROM password_history WHERE user_id = %s ORDER BY created_at DESC LIMIT 10',
+                (user_id,),
+            )
+            return [row[0] for row in cur.fetchall()]

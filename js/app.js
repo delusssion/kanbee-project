@@ -1,3 +1,26 @@
+// ── Password toggle ─────────────────────────────────────────────────
+function bindPasswordToggles(root = document) {
+  const eyeOpen = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+  const eyeOff  = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
+  root.querySelectorAll('input[type="password"]:not(.pwd-toggle-bound)').forEach(input => {
+    input.classList.add('pwd-toggle-bound');
+    const wrap = document.createElement('div');
+    wrap.className = 'pwd-wrap';
+    input.parentNode.insertBefore(wrap, input);
+    wrap.appendChild(input);
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'pwd-toggle-btn';
+    btn.innerHTML = eyeOpen;
+    wrap.appendChild(btn);
+    btn.addEventListener('click', () => {
+      const show = input.type === 'password';
+      input.type = show ? 'text' : 'password';
+      btn.innerHTML = show ? eyeOff : eyeOpen;
+    });
+  });
+}
+
 // ── API ────────────────────────────────────────────────────────────
 const API_BASE = '';
 
@@ -75,10 +98,19 @@ async function loadSettings() {
 }
 
 
+function uniqueBoardName(baseName) {
+  const base = baseName.replace(/ \(\d+\)$/, '').trim();
+  const taken = name => boards.some(b => b.name === name);
+  if (!taken(base)) return base;
+  let n = 1;
+  while (taken(`${base} (${n})`)) n++;
+  return `${base} (${n})`;
+}
+
 async function loadBoards() {
   boards = await api('GET', '/boards');
   if (boards.length === 0) {
-    const b = await api('POST', '/boards', { name: 'My Board' });
+    const b = await api('POST', '/boards', { name: t('boards-new-name') });
     boards = [b];
   }
   currentBoardId = boards[0].id;
@@ -108,6 +140,7 @@ const TRANSLATIONS = {
     'settings-lang':          'Language',
     'settings-theme':         'Theme',
     'settings-default-view':  'Default view',
+    'settings-data':          'Data',
     'settings-export':        'Export JSON',
     'settings-import':        'Import JSON',
     'settings-clear':         'Clear all tasks',
@@ -128,24 +161,7 @@ const TRANSLATIONS = {
     'settings-pwd-current-ph': 'Current password',
     'settings-pwd-new-ph':     'New password (8+ chars, letter + digit)',
     'settings-pwd-success':    'Password changed',
-    'settings-pwd-fill-both':  'Fill in both fields',
-    'err-generic':             'Something went wrong',
-    'err-import':              'Import error. Check the file format.',
-    'err_invalid_email':       'Invalid email address',
-    'err_pwd_too_short':       'Password must be longer than 8 characters',
-    'err_pwd_no_letter':       'Password must contain at least one letter',
-    'err_pwd_no_digits':       'Password must contain at least 2 digits',
-    'err_pwd_no_special':      'Password must contain at least 1 special character',
-    'err_email_send_failed':   'Failed to send email. Please try again later.',
-    'err_email_taken':         'This email is already registered',
-    'err_wrong_credentials':   'Invalid email or password',
-    'err_reset_rate_limit':    'Wait 2 minutes before requesting a new code',
-    'err_invalid_code':        'Invalid or expired code',
-    'err_code_attempts_exceeded': 'Too many attempts. Request a new code',
-    'err_user_not_found':      'User not found',
-    'err_pwd_reuse':           'You cannot reuse a previously used password',
-    'err_wrong_current_password': 'Incorrect current password',
-    'nav-kanban':          'Kanban Board',
+    'nav-kanban':          'Kanban Boards',
     'nav-tracker':         'Task Tracker',
     'subtitle-kanban':     'Drag cards between columns to update status',
     'subtitle-tracker':    'Filter, search and manage all tasks',
@@ -197,6 +213,7 @@ const TRANSLATIONS = {
     'settings-lang':          'Язык',
     'settings-theme':         'Тема',
     'settings-default-view':  'Вид по умолчанию',
+    'settings-data':          'Данные',
     'settings-export':        'Экспорт JSON',
     'settings-import':        'Импорт JSON',
     'settings-clear':         'Очистить задачи',
@@ -217,24 +234,7 @@ const TRANSLATIONS = {
     'settings-pwd-current-ph': 'Текущий пароль',
     'settings-pwd-new-ph':     'Новый пароль (8+ симв., буква и цифра)',
     'settings-pwd-success':    'Пароль изменён',
-    'settings-pwd-fill-both':  'Заполните оба поля',
-    'err-generic':             'Что-то пошло не так',
-    'err-import':              'Ошибка импорта. Проверьте формат файла.',
-    'err_invalid_email':       'Некорректный email адрес',
-    'err_pwd_too_short':       'Пароль должен быть длиннее 8 символов',
-    'err_pwd_no_letter':       'Пароль должен содержать хотя бы одну букву',
-    'err_pwd_no_digits':       'Пароль должен содержать минимум 2 цифры',
-    'err_pwd_no_special':      'Пароль должен содержать минимум 1 специальный символ',
-    'err_email_send_failed':   'Не удалось отправить письмо. Попробуйте позже.',
-    'err_email_taken':         'Этот email уже зарегистрирован',
-    'err_wrong_credentials':   'Неверный email или пароль',
-    'err_reset_rate_limit':    'Подождите 2 минуты перед повторной отправкой кода',
-    'err_invalid_code':        'Неверный или истёкший код',
-    'err_code_attempts_exceeded': 'Превышено количество попыток. Запросите новый код',
-    'err_user_not_found':      'Пользователь не найден',
-    'err_pwd_reuse':           'Нельзя использовать пароль, который уже использовался ранее',
-    'err_wrong_current_password': 'Неверный текущий пароль',
-    'nav-kanban':          'Канбан-доска',
+    'nav-kanban':          'Канбан-доски',
     'nav-tracker':         'Трекер задач',
     'subtitle-kanban':     'Перетащите карточки между колонками для смены статуса',
     'subtitle-tracker':    'Фильтрация, поиск и управление задачами',
@@ -926,7 +926,7 @@ function bindBoards() {
   });
 
   document.getElementById('boards-add-btn').addEventListener('click', async () => {
-    const board = await api('POST', '/boards', { name: t('boards-new-name') });
+    const board = await api('POST', '/boards', { name: uniqueBoardName(t('boards-new-name')) });
     boards.push(board);
     currentBoardId = board.id;
     renderBoards();
@@ -1036,6 +1036,7 @@ function openSettings() {
   document.getElementById('settings-pwd-new').value = '';
   document.getElementById('settings-pwd-error').textContent = '';
   document.getElementById('settings-overlay').classList.add('open');
+  bindPasswordToggles(document.getElementById('settings-panel'));
 }
 
 function closeSettings() {
@@ -1103,6 +1104,41 @@ function bindSettings() {
   document.getElementById('settings-pwd-cancel').addEventListener('click', () => {
     document.getElementById('settings-pwd-form').classList.remove('open');
     document.getElementById('settings-pwd-error').textContent = '';
+  });
+  document.getElementById('settings-pwd-forgot').addEventListener('click', () => {
+    window.location.href = '/reset-password';
+  });
+
+  // Export
+  document.getElementById('settings-export-btn').addEventListener('click', async () => {
+    const res = await fetch('/tasks/export', { credentials: 'include' });
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'kanbee-tasks.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  // Import
+  const importFileInput = document.getElementById('settings-import-file');
+  document.getElementById('settings-import-btn').addEventListener('click', () => {
+    importFileInput.value = '';
+    importFileInput.click();
+  });
+  importFileInput.addEventListener('change', async () => {
+    const file = importFileInput.files[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      await api('POST', '/tasks/import', data);
+      await refreshTasks();
+      closeSettings();
+    } catch {
+      alert('Ошибка импорта. Проверьте формат файла.');
+    }
   });
   document.getElementById('settings-pwd-save').addEventListener('click', async () => {
     const current = document.getElementById('settings-pwd-current').value;

@@ -14,6 +14,14 @@ def get_boards(user_id: str = Depends(get_current_user_id)):
     return storage.get_boards(user_id)
 
 
+@router.get('/{board_id}', response_model=Board)
+def get_board(board_id: str, user_id: str = Depends(get_current_user_id)):
+    board = storage.get_board(board_id, user_id)
+    if not board:
+        raise HTTPException(404, 'Board not found')
+    return board
+
+
 @router.post('', response_model=Board, status_code=201)
 def create_board(payload: BoardCreate, user_id: str = Depends(get_current_user_id)):
     name = payload.name.strip()

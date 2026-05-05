@@ -105,32 +105,21 @@ body { display: flex; height: 100vh; }
 .sidebar-logo {
   display: flex;
   align-items: center;
-  gap: 12px;
   padding: 18px 20px;
   border-bottom: 1px solid var(--border-soft);
   min-height: 72px;
 }
 
-.logo-bee-svg {
-  width: 42px;
-  height: 48px;
-  flex-shrink: 0;
+.logo-img {
+  width: 100%;
+  height: auto;
+  display: block;
 }
 
-.logo-text {
-  font-family: 'Lora', Georgia, serif;
-  font-size: 30px;
-  font-weight: 700;
-  letter-spacing: -0.5px;
-  line-height: 1;
-}
+.logo-img-dark { display: none; }
 
-.logo-kan {
-  color: #6B3F0A;
-}
-.logo-bee-word {
-  color: #C9820A;
-}
+html[data-theme="dark"] .logo-img-light { display: none; }
+html[data-theme="dark"] .logo-img-dark  { display: block; }
 
 html[data-theme="dark"] .logo-kan {
   color: #B07030;
@@ -1678,29 +1667,160 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   justify-content: center;
 }
 
-/* ── Settings user section ────────────────────────────────────────── */
-.settings-user-row {
-  display: flex; align-items: center; gap: 12px;
-  padding: 10px 0 8px;
+/* ── Profile Card (Settings) ─────────────────────────────────────── */
+.profile-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 0 10px;
 }
-.settings-user-avatar {
-  width: 36px; height: 36px; border-radius: 50%;
-  background: var(--accent-glow);
-  border: 1px solid var(--border);
-  display: flex; align-items: center; justify-content: center;
-  font-family: 'Syne', sans-serif;
-  font-size: 14px; font-weight: 800; color: var(--accent);
+.profile-card-avatar-wrap {
+  position: relative;
   flex-shrink: 0;
 }
-.settings-user-info { flex: 1; min-width: 0; }
-.settings-user-name {
-  font-size: 13px; font-weight: 700; color: var(--text);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+.profile-card-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Syne', sans-serif;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -1px;
+  transition: background 0.25s;
+  user-select: none;
 }
-.settings-user-label { font-size: 11px; color: var(--text-muted); }
+.profile-card-color-btn {
+  position: absolute;
+  bottom: 1px;
+  right: 1px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--surface-3);
+  border: 1.5px solid var(--border);
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.profile-card-color-btn:hover {
+  background: var(--surface-2);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.profile-color-picker {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transition: max-height 0.25s ease, opacity 0.2s;
+}
+.profile-color-picker.open {
+  max-height: 50px;
+  opacity: 1;
+}
+.profile-color-swatch {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2.5px solid transparent;
+  cursor: pointer;
+  transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+  flex-shrink: 0;
+  outline: none;
+}
+.profile-color-swatch:hover { transform: scale(1.2); }
+.profile-color-swatch.active {
+  border-color: var(--text);
+  box-shadow: 0 0 0 1.5px var(--bg);
+  transform: scale(1.1);
+}
+.profile-card-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+}
+.profile-card-name-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.profile-card-name {
+  font-family: 'Syne', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.profile-card-edit-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-family: var(--font);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: background 0.15s, color 0.15s;
+}
+.profile-card-edit-btn:hover {
+  background: var(--surface-2);
+  color: var(--accent);
+}
+.profile-card-name-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  padding: 0 2px;
+}
+.profile-card-input-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.profile-card-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+.settings-section--profile { padding-bottom: 10px; }
+.settings-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 12px 0 0;
+  width: 100%;
+}
+.settings-pwd-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 0 4px;
+}
 
+/* Password form */
 .settings-pwd-form {
-  display: none; flex-direction: column; gap: 8px; padding: 8px 0 4px;
+  display: none; flex-direction: column; gap: 8px; padding: 4px 0 4px;
 }
 .settings-pwd-form.open { display: flex; }
 .settings-pwd-error { font-size: 12px; color: var(--high); min-height: 16px; }
@@ -1763,21 +1883,12 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .auth-panel-top { position: relative; z-index: 1; }
 
 .auth-logo {
-  display: flex; align-items: center; gap: 10px;
+  display: flex; align-items: center;
   margin-bottom: 64px;
 }
-.auth-logo-mark {
-  width: 36px; height: 36px; border-radius: 10px;
-  background: #C9820A;
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-}
-.auth-logo-bee { width: 20px; height: 20px; }
-.auth-logo-name {
-  font-family: 'Lora', serif;
-  font-weight: 600; font-size: 20px;
-  color: #2C2318; letter-spacing: -.3px;
-}
+.auth-logo .logo-img { width: 160px; height: auto; }
+.auth-logo .logo-img-dark  { display: none !important; }
+.auth-logo .logo-img-light { display: block !important; }
 
 .auth-tagline {
   font-family: 'Lora', serif;
@@ -1981,6 +2092,18 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   .auth-panel-left { width: 100%; min-height: auto; padding: 36px 28px; }
   .auth-panel-right { width: 100%; min-height: auto; padding: 36px 28px; flex: 1; }
 }
+
+/* ── Password toggle ───────────────────────────────────────────────── */
+.pwd-wrap { position: relative; display: flex; align-items: center; }
+.pwd-wrap input { padding-right: 40px !important; width: 100%; }
+.pwd-toggle-btn {
+  position: absolute; right: 10px;
+  background: none; border: none; cursor: pointer;
+  color: var(--text-muted, #7878a8);
+  display: flex; align-items: center;
+  padding: 4px; flex-shrink: 0; line-height: 1;
+}
+.pwd-toggle-btn:hover { color: var(--text, #e8e8f6); }
 .confirm-actions .btn { min-width: 90px; justify-content: center; }
 
 /* ── Mobile / Tablet ───────────────────────────────────────────────── */

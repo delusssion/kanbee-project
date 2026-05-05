@@ -1,6 +1,9 @@
 from contextlib import asynccontextmanager
 from pathlib import Path
 
+from dotenv import load_dotenv
+load_dotenv(Path(__file__).resolve().parent / '.env')
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
@@ -37,6 +40,7 @@ def health():
 
 app.mount('/css', StaticFiles(directory=ROOT_DIR / 'css'), name='css')
 app.mount('/js', StaticFiles(directory=ROOT_DIR / 'js'), name='js')
+app.mount('/img', StaticFiles(directory=ROOT_DIR / 'img'), name='img')
 
 
 @app.get('/')
