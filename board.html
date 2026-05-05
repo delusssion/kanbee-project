@@ -332,22 +332,56 @@
       </div>
 
       <!-- Profile -->
-      <div class="settings-section">
+      <div class="settings-section settings-section--profile">
         <div class="settings-section-label" data-i18n="settings-account">Account</div>
-        <div class="settings-user-row">
-          <div class="settings-user-avatar" id="settings-user-avatar"></div>
-          <div class="settings-user-info">
-            <div class="settings-user-name" id="settings-user-name"></div>
-            <div class="settings-user-label" data-i18n="settings-local-profile">Local profile</div>
+
+        <!-- Profile card -->
+        <div class="profile-card">
+          <div class="profile-card-avatar-wrap">
+            <div class="profile-card-avatar" id="settings-profile-avatar">A</div>
+            <button class="profile-card-color-btn" id="settings-profile-color-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 011.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>
+            </button>
           </div>
-          <button class="btn btn-ghost btn-sm" id="settings-pwd-btn" data-i18n="settings-change-pwd">Change password</button>
+          <div class="profile-color-picker" id="settings-color-picker">
+            <button class="profile-color-swatch" data-color="#7b6ef6" style="background:#7b6ef6"></button>
+            <button class="profile-color-swatch" data-color="#4cca8a" style="background:#4cca8a"></button>
+            <button class="profile-color-swatch" data-color="#f5a623" style="background:#f5a623"></button>
+            <button class="profile-color-swatch" data-color="#ff6b6b" style="background:#ff6b6b"></button>
+            <button class="profile-color-swatch" data-color="#4db8ff" style="background:#4db8ff"></button>
+            <button class="profile-color-swatch" data-color="#c084fc" style="background:#c084fc"></button>
+            <button class="profile-color-swatch" data-color="#fb923c" style="background:#fb923c"></button>
+          </div>
+          <div class="profile-card-info">
+            <div class="profile-card-name-row" id="settings-name-view">
+              <span class="profile-card-name" id="settings-display-name">User</span>
+              <button class="profile-card-edit-btn" id="settings-name-edit-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                <span data-i18n="settings-edit">Edit</span>
+              </button>
+            </div>
+            <div class="profile-card-name-edit" id="settings-name-edit-wrap" style="display:none">
+              <input class="settings-input" id="settings-name-input" type="text" maxlength="30" />
+              <div class="profile-card-input-actions">
+                <button class="btn btn-ghost btn-sm" id="settings-name-cancel" data-i18n="btn-cancel">Cancel</button>
+                <button class="btn btn-primary btn-sm" id="settings-name-save" data-i18n="settings-save">Save</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-divider"></div>
+
+        <!-- Password -->
+        <div class="settings-pwd-toggle-row">
+          <span class="settings-row-label" data-i18n="settings-change-pwd">Change password</span>
+          <button class="btn btn-ghost btn-sm" id="settings-pwd-btn" data-i18n="settings-change-pwd-short">Change</button>
         </div>
         <div class="settings-pwd-form" id="settings-pwd-form">
           <input class="settings-input" type="password" id="settings-pwd-current" placeholder="Current password" data-i18n-ph="settings-pwd-current-ph" />
           <input class="settings-input" type="password" id="settings-pwd-new" placeholder="New password" data-i18n-ph="settings-pwd-new-ph" />
           <p class="settings-pwd-error" id="settings-pwd-error"></p>
           <div class="settings-pwd-actions">
-            <button class="btn btn-ghost btn-sm settings-pwd-forgot" id="settings-pwd-forgot" data-i18n="settings-forgot-pwd">Forgot password?</button>
             <div class="settings-pwd-actions-right">
               <button class="btn btn-ghost btn-sm" id="settings-pwd-cancel" data-i18n="btn-cancel">Cancel</button>
               <button class="btn btn-primary btn-sm" id="settings-pwd-save" data-i18n="settings-save">Save</button>
