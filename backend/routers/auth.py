@@ -13,7 +13,8 @@ from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response
 
 import storage
 from auth_utils import get_current_user_id
-from models.user import ChangePassword, UserLogin, UserOut, UserRegister
+from models.user import (ChangePassword, ConfirmPasswordReset, RequestPasswordReset,
+                          UserLogin, UserOut, UserRegister, UpdateProfile, VerifyResetCode)
 
 router = APIRouter(prefix='/auth', tags=['auth'])
 
@@ -32,18 +33,18 @@ _EMAIL_RE = re.compile(r'^[^\s@]+@[^\s@]+\.[^\s@]+$')
 
 def _validate_email(email: str):
     if not _EMAIL_RE.match(email):
-        raise HTTPException(400, 'Некорректный email адрес')
+        raise HTTPException(400, 'err_invalid_email')
 
 
 def _validate_password(password: str):
     if len(password) <= 8:
-        raise HTTPException(400, 'Пароль должен быть длиннее 8 символов')
+        raise HTTPException(400, 'err_pwd_too_short')
     if not any(c.isalpha() for c in password):
-        raise HTTPException(400, 'Пароль должен содержать хотя бы одну букву')
+        raise HTTPException(400, 'err_pwd_no_letter')
     if sum(1 for c in password if c.isdigit()) < 2:
-        raise HTTPException(400, 'Пароль должен содержать минимум 2 цифры')
+        raise HTTPException(400, 'err_pwd_no_digits')
     if not any(not c.isalnum() for c in password):
-        raise HTTPException(400, 'Пароль должен содержать минимум 1 специальный символ')
+        raise HTTPException(400, 'err_pwd_no_special')
 
 
 def _pw_history_hash(password: str, user_id: str) -> str:
@@ -75,7 +76,7 @@ def _send_reset_email(to_email: str, code: str):
             smtp.sendmail(SMTP_USER, [to_email], msg.as_string())
     except Exception as exc:
         print(f'[EMAIL ERROR] {exc}')
-        raise HTTPException(500, 'Не удалось отправить письмо. Попробуйте позже.')
+        raise HTTPException(500, 'err_email_send_failed')
 
 
 @router.post('/register', response_model=UserOut)
@@ -84,7 +85,7 @@ def register(payload: UserRegister, request: Request, response: Response):
     _validate_password(payload.password)
 
     if storage.get_user_by_email(payload.email):
-        raise HTTPException(400, 'Этот email уже зарегистрирован')
+        raise HTTPException(400, 'err_email_taken')
 
     pw_hash = bcrypt.hashpw(payload.password.encode(), bcrypt.gensalt()).decode()
     user = storage.create_user_with_email(payload.email, pw_hash)
@@ -103,7 +104,7 @@ def register(payload: UserRegister, request: Request, response: Response):
 def login(payload: UserLogin, request: Request, response: Response):
     user = storage.get_user_by_email(payload.email)
     if not user or not bcrypt.checkpw(payload.password.encode(), user['password_hash'].encode()):
-        raise HTTPException(401, 'Неверный email или пароль')
+        raise HTTPException(401, 'err_wrong_credentials')
 
     session_id = uuid4().hex
     storage.create_session(session_id, user['id'])
@@ -134,7 +135,7 @@ def me(user_id: str = Depends(get_current_user_id)):
 def request_reset(payload: RequestPasswordReset):
     _validate_email(payload.email)
     if storage.has_recent_reset_code(payload.email, RESET_RATE_LIMIT_SECONDS):
-        raise HTTPException(429, 'Подождите 2 минуты перед повторной отправкой кода')
+        raise HTTPException(429, 'err_reset_rate_limit')
     user = storage.get_user_by_email(payload.email)
     if user:
         code = f'{secrets.randbelow(1_000_000):06d}'
@@ -152,15 +153,15 @@ def request_reset(payload: RequestPasswordReset):
 def verify_reset(payload: VerifyResetCode):
     code_row = storage.get_active_reset_code(payload.email)
     if not code_row:
-        raise HTTPException(400, 'Неверный или истёкший код')
+        raise HTTPException(400, 'err_invalid_code')
     if code_row['attempts'] >= MAX_RESET_ATTEMPTS:
-        raise HTTPException(400, 'Превышено количество попыток. Запросите новый код')
+        raise HTTPException(400, 'err_code_attempts_exceeded')
     if code_row['code'] != payload.code:
         new_attempts = storage.increment_reset_attempts(code_row['id'])
         if new_attempts >= MAX_RESET_ATTEMPTS:
             storage.mark_reset_code_used(code_row['id'])
-            raise HTTPException(400, 'Превышено количество попыток. Запросите новый код')
-        raise HTTPException(400, 'Неверный или истёкший код')
+            raise HTTPException(400, 'err_code_attempts_exceeded')
+        raise HTTPException(400, 'err_invalid_code')
     return {'ok': True}
 
 
@@ -168,24 +169,24 @@ def verify_reset(payload: VerifyResetCode):
 def confirm_reset(payload: ConfirmPasswordReset):
     code_row = storage.get_active_reset_code(payload.email)
     if not code_row:
-        raise HTTPException(400, 'Неверный или истёкший код')
+        raise HTTPException(400, 'err_invalid_code')
     if code_row['attempts'] >= MAX_RESET_ATTEMPTS:
-        raise HTTPException(400, 'Превышено количество попыток. Запросите новый код')
+        raise HTTPException(400, 'err_code_attempts_exceeded')
     if code_row['code'] != payload.code:
         new_attempts = storage.increment_reset_attempts(code_row['id'])
         if new_attempts >= MAX_RESET_ATTEMPTS:
             storage.mark_reset_code_used(code_row['id'])
-            raise HTTPException(400, 'Превышено количество попыток. Запросите новый код')
-        raise HTTPException(400, 'Неверный или истёкший код')
+            raise HTTPException(400, 'err_code_attempts_exceeded')
+        raise HTTPException(400, 'err_invalid_code')
 
     user = storage.get_user_by_email(payload.email)
     if not user:
-        raise HTTPException(400, 'Пользователь не найден')
+        raise HTTPException(400, 'err_user_not_found')
 
     _validate_password(payload.new_password)
 
     if _was_password_used(user['id'], payload.new_password):
-        raise HTTPException(400, 'Нельзя использовать пароль, который уже использовался ранее')
+        raise HTTPException(400, 'err_pwd_reuse')
 
     new_hash = bcrypt.hashpw(payload.new_password.encode(), bcrypt.gensalt()).decode()
     storage.update_password(user['id'], new_hash)
@@ -194,29 +195,29 @@ def confirm_reset(payload: ConfirmPasswordReset):
     return {'ok': True}
 
 
-@router.post('/reset-password')
-def reset_password(payload: ResetPassword):
-    user = storage.get_user_by_username(payload.username)
-    if not user:
-        raise HTTPException(400, 'Пользователь с таким логином не найден')
-    _validate_password(payload.new_password)
-    new_hash = bcrypt.hashpw(payload.new_password.encode(), bcrypt.gensalt()).decode()
-    storage.update_password(user['id'], new_hash)
-    return {'ok': True}
-
-
 @router.post('/change-password')
 def change_password(payload: ChangePassword, user_id: str = Depends(get_current_user_id)):
     user = storage.get_user_by_id_full(user_id)
     if not user or not bcrypt.checkpw(payload.current_password.encode(), user['password_hash'].encode()):
-        raise HTTPException(400, 'Неверный текущий пароль')
+        raise HTTPException(400, 'err_wrong_current_password')
 
     _validate_password(payload.new_password)
 
     if _was_password_used(user_id, payload.new_password):
-        raise HTTPException(400, 'Нельзя использовать пароль, который уже использовался ранее')
+        raise HTTPException(400, 'err_pwd_reuse')
 
     new_hash = bcrypt.hashpw(payload.new_password.encode(), bcrypt.gensalt()).decode()
     storage.update_password(user_id, new_hash)
     storage.add_password_history(user_id, _pw_history_hash(payload.new_password, user_id))
     return {'ok': True}
+
+
+@router.patch('/me', response_model=UserOut)
+def update_profile(payload: UpdateProfile, user_id: str = Depends(get_current_user_id)):
+    username = payload.username.strip()
+    if not username:
+        raise HTTPException(400, 'err_username_empty')
+    if len(username) < 2:
+        raise HTTPException(400, 'err_username_too_short')
+    user = storage.update_username(user_id, username)
+    return UserOut(id=user['id'], username=user['username'], email=user.get('email') or '')

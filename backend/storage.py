@@ -364,6 +364,17 @@ def update_password(user_id: str, password_hash: str):
             cur.execute('UPDATE users SET password_hash = %s WHERE id = %s', (password_hash, user_id))
 
 
+def update_username(user_id: str, username: str) -> dict:
+    with _conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                'UPDATE users SET username = %s WHERE id = %s RETURNING id, username, email',
+                (username, user_id),
+            )
+            row = cur.fetchone()
+    return dict(row)
+
+
 # ── Email auth ─────────────────────────────────────────────────────
 
 def get_user_by_email(email: str) -> Optional[dict]:
