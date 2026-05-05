@@ -199,6 +199,25 @@ const TRANSLATIONS = {
     'btn-save':            'Save Changes',
     'theme-light':         'Light',
     'theme-dark':          'Dark',
+    'settings-pwd-fill-both':     'Fill in both fields',
+    'err-generic':                'Something went wrong',
+    'err-import':                 'Import error. Check the file format.',
+    'err_invalid_email':          'Invalid email address',
+    'err_pwd_too_short':          'Password must be longer than 8 characters',
+    'err_pwd_no_letter':          'Password must contain at least one letter',
+    'err_pwd_no_digits':          'Password must contain at least 2 digits',
+    'err_pwd_no_special':         'Password must contain at least 1 special character',
+    'err_email_send_failed':      'Failed to send email. Please try again later.',
+    'err_email_taken':            'This email is already registered',
+    'err_wrong_credentials':      'Invalid email or password',
+    'err_reset_rate_limit':       'Wait 2 minutes before requesting a new code',
+    'err_invalid_code':           'Invalid or expired code',
+    'err_code_attempts_exceeded': 'Too many attempts. Request a new code',
+    'err_user_not_found':         'User not found',
+    'err_pwd_reuse':              'You cannot reuse a previously used password',
+    'err_wrong_current_password': 'Incorrect current password',
+    'err_username_empty':         'Username cannot be empty',
+    'err_username_too_short':     'Username must be at least 2 characters',
   },
   ru: {
     'signin':                 'Войти',
@@ -272,6 +291,25 @@ const TRANSLATIONS = {
     'btn-save':            'Сохранить',
     'theme-light':         'Светлая',
     'theme-dark':          'Тёмная',
+    'settings-pwd-fill-both':     'Заполните оба поля',
+    'err-generic':                'Что-то пошло не так',
+    'err-import':                 'Ошибка импорта. Проверьте формат файла.',
+    'err_invalid_email':          'Некорректный email адрес',
+    'err_pwd_too_short':          'Пароль должен быть длиннее 8 символов',
+    'err_pwd_no_letter':          'Пароль должен содержать хотя бы одну букву',
+    'err_pwd_no_digits':          'Пароль должен содержать минимум 2 цифры',
+    'err_pwd_no_special':         'Пароль должен содержать минимум 1 специальный символ',
+    'err_email_send_failed':      'Не удалось отправить письмо. Попробуйте позже.',
+    'err_email_taken':            'Этот email уже зарегистрирован',
+    'err_wrong_credentials':      'Неверный email или пароль',
+    'err_reset_rate_limit':       'Подождите 2 минуты перед повторной отправкой кода',
+    'err_invalid_code':           'Неверный или истёкший код',
+    'err_code_attempts_exceeded': 'Превышено количество попыток. Запросите новый код',
+    'err_user_not_found':         'Пользователь не найден',
+    'err_pwd_reuse':              'Нельзя использовать ранее использованный пароль',
+    'err_wrong_current_password': 'Неверный текущий пароль',
+    'err_username_empty':         'Имя пользователя не может быть пустым',
+    'err_username_too_short':     'Имя пользователя должно содержать минимум 2 символа',
   },
 };
 
@@ -1137,7 +1175,7 @@ function bindSettings() {
       await refreshTasks();
       closeSettings();
     } catch {
-      alert('Ошибка импорта. Проверьте формат файла.');
+      alert(t('err-import'));
     }
   });
   document.getElementById('settings-pwd-save').addEventListener('click', async () => {
