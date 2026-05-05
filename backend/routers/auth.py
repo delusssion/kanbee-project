@@ -13,8 +13,7 @@ from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response
 
 import storage
 from auth_utils import get_current_user_id
-from models.user import (ChangePassword, ConfirmPasswordReset, RequestPasswordReset,
-                          UserLogin, UserOut, UserRegister, VerifyResetCode)
+from models.user import ChangePassword, UserLogin, UserOut, UserRegister
 
 router = APIRouter(prefix='/auth', tags=['auth'])
 
@@ -192,6 +191,17 @@ def confirm_reset(payload: ConfirmPasswordReset):
     storage.update_password(user['id'], new_hash)
     storage.add_password_history(user['id'], _pw_history_hash(payload.new_password, user['id']))
     storage.mark_reset_code_used(code_row['id'])
+    return {'ok': True}
+
+
+@router.post('/reset-password')
+def reset_password(payload: ResetPassword):
+    user = storage.get_user_by_username(payload.username)
+    if not user:
+        raise HTTPException(400, 'Пользователь с таким логином не найден')
+    _validate_password(payload.new_password)
+    new_hash = bcrypt.hashpw(payload.new_password.encode(), bcrypt.gensalt()).decode()
+    storage.update_password(user['id'], new_hash)
     return {'ok': True}
 
 
