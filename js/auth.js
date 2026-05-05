@@ -80,7 +80,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   function setMode(m) {
     mode = m;
     const isReg = m === 'register';
-    submitBtn.textContent     = isReg ? 'Зарегистрироваться →' : 'Войти →';
+    submitBtn.textContent     = isReg ? tA('btn-register') : tA('btn-login');
     confirmWrap.style.display = isReg ? '' : 'none';
     confirmEl.required        = isReg;
     eyebrow.textContent       = isReg ? 'Добро пожаловать' : 'С возвращением';
@@ -99,6 +99,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     setMode('register');
   }
 
+  bindPasswordToggles();
+
   tabLogin.addEventListener('click', () => setMode('login'));
   tabReg.addEventListener('click',   () => setMode('register'));
 
@@ -116,7 +118,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const pwErr = validatePassword(password);
       if (pwErr) { errorEl.textContent = pwErr; return; }
       if (password !== confirmEl.value) {
-        errorEl.textContent = 'Пароли не совпадают'; return;
+        errorEl.textContent = tA('passwords-mismatch'); return;
       }
     }
 
