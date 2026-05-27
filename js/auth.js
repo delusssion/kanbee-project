@@ -106,6 +106,7 @@ function bindPasswordToggles() {
   const eyeOpen = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
   const eyeOff  = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
   document.querySelectorAll('input[type="password"]').forEach(input => {
+    if (input.parentNode.classList.contains('pwd-wrap')) return;
     const wrap = document.createElement('div');
     wrap.className = 'pwd-wrap';
     input.parentNode.insertBefore(wrap, input);
@@ -158,13 +159,11 @@ function validatePassword(password) {
 
 // ── Apply language to static DOM elements ────────────────────────────
 function applyAuthLang(currentMode) {
-  // Left panel
   const taglineEl = document.getElementById('auth-left-tagline');
   const subEl     = document.getElementById('auth-left-sub');
   if (taglineEl) taglineEl.innerHTML = tA('left-tagline');
   if (subEl)     subEl.textContent   = tA('left-sub');
 
-  // Form labels
   const labelEmail   = document.getElementById('auth-label-email');
   const labelPwd     = document.getElementById('auth-label-password');
   const labelConfirm = document.getElementById('auth-label-confirm');
@@ -172,7 +171,6 @@ function applyAuthLang(currentMode) {
   if (labelPwd)     labelPwd.textContent     = tA('label-password');
   if (labelConfirm) labelConfirm.textContent = tA('label-confirm');
 
-  // Placeholders
   const emailInput   = document.getElementById('auth-email');
   const pwdInput     = document.getElementById('auth-password');
   const confirmInput = document.getElementById('auth-confirm');
@@ -180,28 +178,24 @@ function applyAuthLang(currentMode) {
   if (pwdInput)     pwdInput.placeholder     = tA('ph-password');
   if (confirmInput) confirmInput.placeholder = tA('ph-confirm');
 
-  // Forgot link
   const forgotEl = document.getElementById('auth-forgot');
   if (forgotEl) forgotEl.textContent = tA('forgot');
 
-  // Tab buttons (always update both, even if one is hidden)
   const tabReg = document.getElementById('auth-tab-register');
   const tabLog = document.getElementById('auth-tab-login');
   if (tabReg) tabReg.textContent = tA('tab-register');
   if (tabLog) tabLog.textContent = tA('tab-login');
 
-  // Language switcher active state
   document.querySelectorAll('.auth-lang-btn').forEach(btn => {
     btn.classList.toggle('active', btn.id === `auth-lang-${authLang}`);
   });
 
-  // Re-apply mode-specific text if mode is known
   if (currentMode) {
     const isReg = currentMode === 'register';
-    const eyebrow      = document.getElementById('auth-eyebrow');
-    const heading      = document.getElementById('auth-form-heading');
-    const switchLabel  = document.getElementById('auth-switch-label');
-    const submitBtn    = document.getElementById('auth-submit');
+    const eyebrow     = document.getElementById('auth-eyebrow');
+    const heading     = document.getElementById('auth-form-heading');
+    const switchLabel = document.getElementById('auth-switch-label');
+    const submitBtn   = document.getElementById('auth-submit');
     if (eyebrow)     eyebrow.textContent     = tA(isReg ? 'eyebrow-register' : 'eyebrow-login');
     if (heading)     heading.textContent     = tA(isReg ? 'heading-register' : 'heading-login');
     if (switchLabel) switchLabel.textContent = tA(isReg ? 'switch-register' : 'switch-login');
@@ -228,9 +222,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   const passwordEl  = document.getElementById('auth-password');
   const confirmWrap = document.getElementById('auth-confirm-wrap');
   const confirmEl   = document.getElementById('auth-confirm');
-  const eyebrow     = document.getElementById('auth-eyebrow');
-  const heading     = document.getElementById('auth-form-heading');
-  const switchLabel = document.getElementById('auth-switch-label');
   const forgotWrap  = document.getElementById('auth-forgot-wrap');
 
   let mode = 'login';
@@ -238,17 +229,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   function setMode(m) {
     mode = m;
     const isReg = m === 'register';
-    submitBtn.textContent     = tA(isReg ? 'btn-register' : 'btn-login');
     confirmWrap.style.display = isReg ? '' : 'none';
     confirmEl.required        = isReg;
-    eyebrow.textContent       = tA(isReg ? 'eyebrow-register' : 'eyebrow-login');
-    heading.textContent       = tA(isReg ? 'heading-register' : 'heading-login');
-    switchLabel.textContent   = tA(isReg ? 'switch-register' : 'switch-login');
     tabLogin.style.display    = isReg ? '' : 'none';
     tabReg.style.display      = isReg ? 'none' : '';
     forgotWrap.style.display  = isReg ? 'none' : '';
     errorEl.textContent = '';
     form.reset();
+    applyAuthLang(m);
+    bindPasswordToggles();
   }
 
   bindPasswordToggles();
@@ -261,13 +250,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   tabLogin.addEventListener('click', () => setMode('login'));
   tabReg.addEventListener('click',   () => setMode('register'));
 
-  // Language switcher
-  document.getElementById('auth-lang-ru').addEventListener('click', () => {
+  const langRuBtn = document.getElementById('auth-lang-ru');
+  const langEnBtn = document.getElementById('auth-lang-en');
+  if (langRuBtn) langRuBtn.addEventListener('click', () => {
     authLang = 'ru';
     localStorage.setItem('kanbee_lang', 'ru');
     applyAuthLang(mode);
   });
-  document.getElementById('auth-lang-en').addEventListener('click', () => {
+  if (langEnBtn) langEnBtn.addEventListener('click', () => {
     authLang = 'en';
     localStorage.setItem('kanbee_lang', 'en');
     applyAuthLang(mode);
