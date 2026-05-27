@@ -1,3 +1,26 @@
+// ── Password toggle ─────────────────────────────────────────────────
+function bindPasswordToggles(root = document) {
+  const eyeOpen = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+  const eyeOff  = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
+  root.querySelectorAll('input[type="password"]:not(.pwd-toggle-bound)').forEach(input => {
+    input.classList.add('pwd-toggle-bound');
+    const wrap = document.createElement('div');
+    wrap.className = 'pwd-wrap';
+    input.parentNode.insertBefore(wrap, input);
+    wrap.appendChild(input);
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'pwd-toggle-btn';
+    btn.innerHTML = eyeOpen;
+    wrap.appendChild(btn);
+    btn.addEventListener('click', () => {
+      const show = input.type === 'password';
+      input.type = show ? 'text' : 'password';
+      btn.innerHTML = show ? eyeOff : eyeOpen;
+    });
+  });
+}
+
 // ── API ────────────────────────────────────────────────────────────
 const API_BASE = '';
 
@@ -29,6 +52,7 @@ let lang = 'en';
 let currentView = 'kanban';
 let userName = '';
 let defaultView = 'kanban';
+let avatarColor = localStorage.getItem('kanbee_avatar_color') || '#7b6ef6';
 
 // ── Init ───────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
@@ -67,6 +91,7 @@ async function initApp() {
 async function loadSettings() {
   const s = await api('GET', '/settings');
   lang        = s.lang         || 'en';
+  localStorage.setItem('kanbee_lang', lang);
   defaultView = s.default_view || 'kanban';
   document.documentElement.dataset.theme = s.theme || 'dark';
   applyLang();
@@ -115,6 +140,7 @@ const TRANSLATIONS = {
     'settings-lang':          'Language',
     'settings-theme':         'Theme',
     'settings-default-view':  'Default view',
+    'settings-data':          'Data',
     'settings-export':        'Export JSON',
     'settings-import':        'Import JSON',
     'settings-clear':         'Clear all tasks',
@@ -129,7 +155,8 @@ const TRANSLATIONS = {
     'boards-new-name':         'New Board',
     'boards-add':              'Add board',
     'boards-confirm-delete':   'Delete this board and all its tasks? This cannot be undone.',
-    'settings-change-pwd':     'Change password',
+    'settings-change-pwd':       'Change password',
+    'settings-change-pwd-short': 'Change',
     'settings-forgot-pwd':     'Forgot password?',
     'settings-pwd-current-ph': 'Current password',
     'settings-pwd-new-ph':     'New password (8+ chars, letter + digit)',
@@ -172,6 +199,25 @@ const TRANSLATIONS = {
     'btn-save':            'Save Changes',
     'theme-light':         'Light',
     'theme-dark':          'Dark',
+    'settings-pwd-fill-both':     'Fill in both fields',
+    'err-generic':                'Something went wrong',
+    'err-import':                 'Import error. Check the file format.',
+    'err_invalid_email':          'Invalid email address',
+    'err_pwd_too_short':          'Password must be longer than 8 characters',
+    'err_pwd_no_letter':          'Password must contain at least one letter',
+    'err_pwd_no_digits':          'Password must contain at least 2 digits',
+    'err_pwd_no_special':         'Password must contain at least 1 special character',
+    'err_email_send_failed':      'Failed to send email. Please try again later.',
+    'err_email_taken':            'This email is already registered',
+    'err_wrong_credentials':      'Invalid email or password',
+    'err_reset_rate_limit':       'Wait 2 minutes before requesting a new code',
+    'err_invalid_code':           'Invalid or expired code',
+    'err_code_attempts_exceeded': 'Too many attempts. Request a new code',
+    'err_user_not_found':         'User not found',
+    'err_pwd_reuse':              'You cannot reuse a previously used password',
+    'err_wrong_current_password': 'Incorrect current password',
+    'err_username_empty':         'Username cannot be empty',
+    'err_username_too_short':     'Username must be at least 2 characters',
   },
   ru: {
     'signin':                 'Войти',
@@ -186,6 +232,7 @@ const TRANSLATIONS = {
     'settings-lang':          'Язык',
     'settings-theme':         'Тема',
     'settings-default-view':  'Вид по умолчанию',
+    'settings-data':          'Данные',
     'settings-export':        'Экспорт JSON',
     'settings-import':        'Импорт JSON',
     'settings-clear':         'Очистить задачи',
@@ -200,7 +247,8 @@ const TRANSLATIONS = {
     'boards-new-name':         'Новая доска',
     'boards-add':              'Добавить доску',
     'boards-confirm-delete':   'Удалить эту доску и все её задачи? Это необратимо.',
-    'settings-change-pwd':     'Сменить пароль',
+    'settings-change-pwd':       'Сменить пароль',
+    'settings-change-pwd-short': 'Изменить',
     'settings-forgot-pwd':     'Забыл пароль?',
     'settings-pwd-current-ph': 'Текущий пароль',
     'settings-pwd-new-ph':     'Новый пароль (8+ симв., буква и цифра)',
@@ -243,11 +291,39 @@ const TRANSLATIONS = {
     'btn-save':            'Сохранить',
     'theme-light':         'Светлая',
     'theme-dark':          'Тёмная',
+    'settings-pwd-fill-both':     'Заполните оба поля',
+    'err-generic':                'Что-то пошло не так',
+    'err-import':                 'Ошибка импорта. Проверьте формат файла.',
+    'err_invalid_email':          'Некорректный email адрес',
+    'err_pwd_too_short':          'Пароль должен быть длиннее 8 символов',
+    'err_pwd_no_letter':          'Пароль должен содержать хотя бы одну букву',
+    'err_pwd_no_digits':          'Пароль должен содержать минимум 2 цифры',
+    'err_pwd_no_special':         'Пароль должен содержать минимум 1 специальный символ',
+    'err_email_send_failed':      'Не удалось отправить письмо. Попробуйте позже.',
+    'err_email_taken':            'Этот email уже зарегистрирован',
+    'err_wrong_credentials':      'Неверный email или пароль',
+    'err_reset_rate_limit':       'Подождите 2 минуты перед повторной отправкой кода',
+    'err_invalid_code':           'Неверный или истёкший код',
+    'err_code_attempts_exceeded': 'Превышено количество попыток. Запросите новый код',
+    'err_user_not_found':         'Пользователь не найден',
+    'err_pwd_reuse':              'Нельзя использовать ранее использованный пароль',
+    'err_wrong_current_password': 'Неверный текущий пароль',
+    'err_username_empty':         'Имя пользователя не может быть пустым',
+    'err_username_too_short':     'Имя пользователя должно содержать минимум 2 символа',
   },
 };
 
 function t(key) {
   return (TRANSLATIONS[lang] && TRANSLATIONS[lang][key]) || TRANSLATIONS.en[key] || key;
+}
+
+function tErr(err) {
+  try {
+    const detail = JSON.parse(err.message).detail;
+    const code = typeof detail === 'string' ? detail : (Array.isArray(detail) ? detail[0]?.msg : null);
+    if (code) return t(code) !== code ? t(code) : code;
+  } catch {}
+  return err.message || t('err-generic');
 }
 
 // ── Language ───────────────────────────────────────────────────────
@@ -843,8 +919,17 @@ function startBoardRename(board, item) {
 }
 
 async function switchBoard(boardId) {
-  if (boardId === currentBoardId) return;
   currentBoardId = boardId;
+  if (currentView !== 'kanban') {
+    currentView = 'kanban';
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector('[data-view="kanban"]').classList.add('active');
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById('view-kanban').classList.add('active');
+    document.getElementById('view-title').textContent = t('nav-kanban');
+    document.getElementById('view-subtitle').textContent = t('subtitle-kanban');
+    updateBreadcrumbBoard();
+  }
   renderBoards();
   await refreshTasks();
 }
@@ -968,13 +1053,28 @@ function applyDefaultView() {
 // ── Settings ────────────────────────────────────────────────────────
 function openSettings() {
   syncSettingsUI();
-  document.getElementById('settings-user-name').textContent = userName;
-  document.getElementById('settings-user-avatar').textContent = userName ? userName[0].toUpperCase() : '';
+  const initial = userName ? userName[0].toUpperCase() : '?';
+  const avatarEl = document.getElementById('settings-profile-avatar');
+  avatarEl.textContent = initial;
+  avatarEl.style.background = avatarColor;
+  document.getElementById('settings-display-name').textContent = userName || t('settings-guest');
+  // sync active color swatch
+  document.querySelectorAll('.profile-color-swatch').forEach(sw => {
+    sw.classList.toggle('active', sw.dataset.color === avatarColor);
+  });
+  // reset name editor
+  document.getElementById('settings-name-view').style.display = '';
+  document.getElementById('settings-name-edit-wrap').style.display = 'none';
+  document.getElementById('settings-name-input').value = userName || '';
+  // close color picker
+  document.getElementById('settings-color-picker').classList.remove('open');
+  // reset password form
   document.getElementById('settings-pwd-form').classList.remove('open');
   document.getElementById('settings-pwd-current').value = '';
   document.getElementById('settings-pwd-new').value = '';
   document.getElementById('settings-pwd-error').textContent = '';
   document.getElementById('settings-overlay').classList.add('open');
+  bindPasswordToggles(document.getElementById('settings-panel'));
 }
 
 function closeSettings() {
@@ -997,6 +1097,7 @@ function syncSettingsUI() {
 }
 
 function bindSettings() {
+  bindProfileCard();
   document.getElementById('settings-close').addEventListener('click', closeSettings);
   document.getElementById('settings-overlay').addEventListener('click', e => {
     if (e.target === e.currentTarget) closeSettings();
@@ -1005,6 +1106,7 @@ function bindSettings() {
   document.querySelectorAll('#lang-seg .settings-seg-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
       lang = btn.dataset.lang;
+      localStorage.setItem('kanbee_lang', lang);
       await api('PATCH', '/settings', { lang });
       applyLang();
       render();
@@ -1044,13 +1146,45 @@ function bindSettings() {
   document.getElementById('settings-pwd-forgot').addEventListener('click', () => {
     window.location.href = '/reset-password';
   });
+
+  // Export
+  document.getElementById('settings-export-btn').addEventListener('click', async () => {
+    const res = await fetch('/tasks/export', { credentials: 'include' });
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'kanbee-tasks.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  // Import
+  const importFileInput = document.getElementById('settings-import-file');
+  document.getElementById('settings-import-btn').addEventListener('click', () => {
+    importFileInput.value = '';
+    importFileInput.click();
+  });
+  importFileInput.addEventListener('change', async () => {
+    const file = importFileInput.files[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      await api('POST', '/tasks/import', data);
+      await refreshTasks();
+      closeSettings();
+    } catch {
+      alert(t('err-import'));
+    }
+  });
   document.getElementById('settings-pwd-save').addEventListener('click', async () => {
     const current = document.getElementById('settings-pwd-current').value;
     const next    = document.getElementById('settings-pwd-new').value;
     const errEl   = document.getElementById('settings-pwd-error');
     errEl.style.color = '';
     errEl.textContent = '';
-    if (!current || !next) { errEl.textContent = 'Заполните оба поля'; return; }
+    if (!current || !next) { errEl.textContent = t('settings-pwd-fill-both'); return; }
     try {
       await api('POST', '/auth/change-password', { current_password: current, new_password: next });
       errEl.style.color = 'var(--done)';
@@ -1060,9 +1194,62 @@ function bindSettings() {
         errEl.textContent = ''; errEl.style.color = '';
       }, 1500);
     } catch (err) {
-      try { errEl.textContent = JSON.parse(err.message).detail || 'Ошибка'; }
-      catch { errEl.textContent = err.message || 'Ошибка'; }
+      errEl.textContent = tErr(err);
     }
+  });
+}
+
+// ── Profile Card (Settings) ──────────────────────────────────────────
+function bindProfileCard() {
+  // Toggle color picker
+  document.getElementById('settings-profile-color-btn').addEventListener('click', () => {
+    document.getElementById('settings-color-picker').classList.toggle('open');
+  });
+
+  // Color swatch selection
+  document.querySelectorAll('.profile-color-swatch').forEach(sw => {
+    sw.addEventListener('click', () => {
+      avatarColor = sw.dataset.color;
+      localStorage.setItem('kanbee_avatar_color', avatarColor);
+      document.getElementById('settings-profile-avatar').style.background = avatarColor;
+      document.querySelectorAll('.profile-color-swatch').forEach(s => {
+        s.classList.toggle('active', s.dataset.color === avatarColor);
+      });
+      updateProfileUI();
+      setTimeout(() => document.getElementById('settings-color-picker').classList.remove('open'), 400);
+    });
+  });
+
+  // Name edit
+  document.getElementById('settings-name-edit-btn').addEventListener('click', () => {
+    document.getElementById('settings-name-view').style.display = 'none';
+    document.getElementById('settings-name-edit-wrap').style.display = '';
+    const input = document.getElementById('settings-name-input');
+    input.value = userName || '';
+    input.focus();
+    input.select();
+  });
+
+  document.getElementById('settings-name-cancel').addEventListener('click', () => {
+    document.getElementById('settings-name-view').style.display = '';
+    document.getElementById('settings-name-edit-wrap').style.display = 'none';
+  });
+
+  document.getElementById('settings-name-save').addEventListener('click', () => {
+    const newName = document.getElementById('settings-name-input').value.trim();
+    if (!newName) return;
+    userName = newName;
+    document.getElementById('settings-display-name').textContent = userName;
+    document.getElementById('settings-profile-avatar').textContent = userName[0].toUpperCase();
+    document.getElementById('settings-name-view').style.display = '';
+    document.getElementById('settings-name-edit-wrap').style.display = 'none';
+    updateProfileUI();
+    // TODO: wire to PATCH /auth/me once backend supports it
+  });
+
+  document.getElementById('settings-name-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('settings-name-save').click();
+    if (e.key === 'Escape') document.getElementById('settings-name-cancel').click();
   });
 }
 
@@ -1073,8 +1260,10 @@ function updateProfileUI() {
   const authLabel = document.getElementById('dropdown-auth-label');
 
   nameEl.textContent = userName;
-  avatarEl.innerHTML = userName[0].toUpperCase();
+  avatarEl.innerHTML = userName ? userName[0].toUpperCase() : '';
   avatarEl.classList.add('has-name');
+  avatarEl.style.background = avatarColor;
+  avatarEl.style.borderColor = avatarColor;
   if (authLabel) authLabel.textContent = t('signout');
 }
 
