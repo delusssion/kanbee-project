@@ -1,11 +1,12 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>KanBee — Таск-трекер и канбан-доска</title>
   <meta name="description" content="Канбан-доска и трекер задач для командной и личной работы. Просто, быстро, красиво." />
   <link rel="icon" type="image/png" href="/img/logo-light.png" />
+  <script>(function(){var t=localStorage.getItem('kanbee_theme');if(t)document.documentElement.dataset.theme=t;}());</script>
   <link rel="stylesheet" href="css/styles.css?v=9" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
@@ -176,13 +177,13 @@
           <!-- Status dropdown -->
           <div class="filter-drop-wrap" id="status-drop-wrap">
             <button class="filter-drop-btn" id="status-drop-btn">
-              <span class="filter-drop-label" id="status-drop-label" data-i18n="th-status">Status</span>
+              <span class="filter-drop-label" id="status-drop-label" data-i18n="filter-all-status">All Statuses</span>
               <svg class="filter-drop-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
             </button>
             <div class="filter-drop-menu" id="status-drop-menu">
-              <button class="filter-menu-item selected" data-value="" data-label-i18n="th-status">
+              <button class="filter-menu-item selected" data-value="" data-label-i18n="filter-all-status">
                 <svg class="menu-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                <span data-i18n="filter-all">All</span>
+                <span data-i18n="filter-all-status">All Statuses</span>
               </button>
               <button class="filter-menu-item" data-value="todo" data-label-i18n="col-todo">
                 <svg class="menu-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
@@ -204,13 +205,13 @@
           <!-- Priority dropdown -->
           <div class="filter-drop-wrap" id="priority-drop-wrap">
             <button class="filter-drop-btn" id="priority-drop-btn">
-              <span class="filter-drop-label" id="priority-drop-label" data-i18n="th-priority">Priority</span>
+              <span class="filter-drop-label" id="priority-drop-label" data-i18n="filter-all-priority">All Priorities</span>
               <svg class="filter-drop-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
             </button>
             <div class="filter-drop-menu" id="priority-drop-menu">
-              <button class="filter-menu-item selected" data-value="" data-label-i18n="th-priority">
+              <button class="filter-menu-item selected" data-value="" data-label-i18n="filter-all-priority">
                 <svg class="menu-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                <span data-i18n="filter-all">All</span>
+                <span data-i18n="filter-all-priority">All Priorities</span>
               </button>
               <button class="filter-menu-item" data-value="high" data-label-i18n="pri-high">
                 <svg class="menu-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>

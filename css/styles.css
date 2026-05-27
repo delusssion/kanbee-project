@@ -2028,6 +2028,10 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .auth-lang-btn:hover { color: #2C2318; }
 .auth-lang-btn.active { color: #C9820A; font-weight: 600; }
 .auth-lang-sep { color: #D8CCBB; font-size: 12px; user-select: none; }
+[data-theme="dark"] .auth-lang-btn { color: rgba(255,255,255,0.45); }
+[data-theme="dark"] .auth-lang-btn:hover { color: rgba(255,255,255,0.85); }
+[data-theme="dark"] .auth-lang-btn.active { color: #a78bfa; font-weight: 600; }
+[data-theme="dark"] .auth-lang-sep { color: rgba(255,255,255,0.2); }
 
 .auth-form-card {
   width: 100%; max-width: 380px;

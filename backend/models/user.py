@@ -39,3 +39,8 @@ class ChangePassword(BaseModel):
 
 class UpdateProfile(BaseModel):
     username: str
+
+
+class ConfirmRegistration(BaseModel):
+    email: str
+    code: str

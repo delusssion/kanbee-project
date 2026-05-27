@@ -53,6 +53,7 @@ let currentView = 'kanban';
 let userName = '';
 let defaultView = 'kanban';
 let avatarColor = localStorage.getItem('kanbee_avatar_color') || '#7b6ef6';
+let trackerFilter = {};
 
 // ── Init ───────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
@@ -73,7 +74,9 @@ async function checkAuth() {
 }
 
 async function initApp() {
-  await loadSettings();
+  try {
+    await loadSettings();
+  } catch { /* use defaults */ }
   await loadBoards();
   applyDefaultView();
   bindNav();
@@ -93,7 +96,9 @@ async function loadSettings() {
   lang        = s.lang         || 'en';
   localStorage.setItem('kanbee_lang', lang);
   defaultView = s.default_view || 'kanban';
-  document.documentElement.dataset.theme = s.theme || 'dark';
+  const theme = s.theme || 'light';
+  document.documentElement.dataset.theme = theme;
+  localStorage.setItem('kanbee_theme', theme);
   applyLang();
 }
 
@@ -392,7 +397,7 @@ function bindDateAutoAdvance() {
 // ── Render ─────────────────────────────────────────────────────────
 function render() {
   renderKanban();
-  renderTracker();
+  renderTracker(trackerFilter);
   updateSidebar();
 }
 
@@ -547,6 +552,8 @@ function addTouchDrag(card, taskId) {
           const updated = await api('PATCH', `/tasks/${task.id}`, { status });
           const idx = tasks.findIndex(t => t.id === task.id);
           if (idx !== -1) tasks[idx] = updated;
+          const allIdx = allTasks.findIndex(t => t.id === dragSrcId);
+          if (allIdx !== -1) allTasks[allIdx] = updated;
           render();
         }
       }
@@ -571,6 +578,8 @@ function bindDrop(list, status) {
         const updated = await api('PATCH', `/tasks/${task.id}`, { status });
         const idx = tasks.findIndex(t => t.id === task.id);
         if (idx !== -1) tasks[idx] = updated;
+        const allIdx = allTasks.findIndex(t => t.id === dragSrcId);
+        if (allIdx !== -1) allTasks[allIdx] = updated;
         render();
       }
     }
@@ -665,7 +674,8 @@ function bindTracker() {
   let boardFilter    = '';
 
   function applyFilter() {
-    renderTracker({ query: searchInput.value, status: statusFilter, priority: priorityFilter, board: boardFilter });
+    trackerFilter = { query: searchInput.value, status: statusFilter, priority: priorityFilter, board: boardFilter };
+    renderTracker(trackerFilter);
   }
 
   searchInput.addEventListener('input', applyFilter);
@@ -813,9 +823,12 @@ function bindModal() {
       const updated = await api('PATCH', `/tasks/${id}`, data);
       const idx = tasks.findIndex(t => t.id === id);
       if (idx !== -1) tasks[idx] = updated;
+      const allIdx = allTasks.findIndex(t => t.id === id);
+      if (allIdx !== -1) allTasks[allIdx] = updated;
     } else {
       const created = await api('POST', '/tasks', data);
       tasks.push(created);
+      allTasks.push(created);
     }
 
     render();
@@ -824,8 +837,10 @@ function bindModal() {
 
   document.getElementById('clear-all-btn').addEventListener('click', () => {
     showConfirm(t('settings-confirm-clear'), async () => {
+      const deletedIds = new Set(tasks.map(t => t.id));
       await Promise.all(tasks.map(t => api('DELETE', `/tasks/${t.id}`)));
       tasks = [];
+      allTasks = allTasks.filter(t => !deletedIds.has(t.id));
       render();
     });
   });
@@ -992,7 +1007,7 @@ function bindNav() {
       document.getElementById('view-subtitle').textContent =
         t(currentView === 'kanban' ? 'subtitle-kanban' : 'subtitle-tracker');
       updateBreadcrumbBoard();
-      if (currentView === 'tracker') renderTracker();
+      if (currentView === 'tracker') renderTracker(trackerFilter);
     });
   });
 }
@@ -1002,6 +1017,7 @@ async function deleteTask(id) {
   showConfirm(t('settings-confirm-delete-task'), async () => {
     await api('DELETE', `/tasks/${id}`);
     tasks = tasks.filter(t => t.id !== id);
+    allTasks = allTasks.filter(t => t.id !== id);
     render();
   });
 }
@@ -1118,6 +1134,7 @@ function bindSettings() {
     btn.addEventListener('click', async () => {
       const theme = btn.dataset.themeVal;
       document.documentElement.dataset.theme = theme;
+      localStorage.setItem('kanbee_theme', theme);
       await api('PATCH', '/settings', { theme });
       document.querySelectorAll('#theme-seg .settings-seg-btn').forEach(b => {
         b.classList.toggle('active', b === btn);
@@ -1235,7 +1252,7 @@ function bindProfileCard() {
     document.getElementById('settings-name-edit-wrap').style.display = 'none';
   });
 
-  document.getElementById('settings-name-save').addEventListener('click', () => {
+  document.getElementById('settings-name-save').addEventListener('click', async () => {
     const newName = document.getElementById('settings-name-input').value.trim();
     if (!newName) return;
     userName = newName;
@@ -1244,7 +1261,7 @@ function bindProfileCard() {
     document.getElementById('settings-name-view').style.display = '';
     document.getElementById('settings-name-edit-wrap').style.display = 'none';
     updateProfileUI();
-    // TODO: wire to PATCH /auth/me once backend supports it
+    await api('PATCH', '/auth/me', { username: newName });
   });
 
   document.getElementById('settings-name-input').addEventListener('keydown', e => {

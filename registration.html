@@ -133,6 +133,25 @@
           </p>
         </form>
 
+        <div id="auth-verify-wrap" style="display:none">
+          <p class="auth-form-eyebrow" id="auth-verify-eyebrow">Подтверждение</p>
+          <h2 class="auth-form-heading" id="auth-verify-heading">Введите код</h2>
+          <p class="auth-form-sub">
+            <span id="auth-verify-sent-label">Код отправлен на</span> <strong id="auth-verify-email"></strong>
+          </p>
+          <div class="auth-field">
+            <label class="auth-field-label" id="auth-verify-label">Код из письма</label>
+            <input class="auth-field-input" id="auth-verify-code" type="text"
+              maxlength="6" placeholder="6-значный код"
+              inputmode="numeric" autocomplete="one-time-code" />
+          </div>
+          <p class="auth-error" id="auth-verify-error"></p>
+          <button type="button" class="auth-submit-btn" id="auth-verify-btn">Подтвердить →</button>
+          <p class="auth-forgot-wrap">
+            <button type="button" class="auth-tab-link" id="auth-verify-resend">Выслать повторно</button>
+          </p>
+        </div>
+
       </div>
 
       <!-- Language switcher -->

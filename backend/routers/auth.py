@@ -13,8 +13,9 @@ from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response
 
 import storage
 from auth_utils import get_current_user_id
-from models.user import (ChangePassword, ConfirmPasswordReset, RequestPasswordReset,
-                          UserLogin, UserOut, UserRegister, UpdateProfile, VerifyResetCode)
+from models.user import (ChangePassword, ConfirmPasswordReset, ConfirmRegistration,
+                          RequestPasswordReset, UserLogin, UserOut, UserRegister,
+                          UpdateProfile, VerifyResetCode)
 
 router = APIRouter(prefix='/auth', tags=['auth'])
 
@@ -51,8 +52,35 @@ def _pw_history_hash(password: str, user_id: str) -> str:
     return hashlib.sha256(f'{password}:{user_id}'.encode()).hexdigest()
 
 
+def _pw_history_hash_from_stored(pw_hash: str, user_id: str) -> str:
+    return hashlib.sha256(f'{pw_hash}:{user_id}'.encode()).hexdigest()
+
+
 def _was_password_used(user_id: str, password: str) -> bool:
     return _pw_history_hash(password, user_id) in storage.get_password_history(user_id)
+
+
+def _send_verification_email(to_email: str, code: str):
+    if not _SMTP_PASSWORD:
+        print(f'[DEV] Verification code for {to_email}: {code}')
+        return
+    msg = MIMEText(
+        f'Ваш код подтверждения регистрации KanBee: {code}\n\n'
+        f'Код действителен {RESET_CODE_TTL_MINUTES} минут.',
+        'plain', 'utf-8',
+    )
+    msg['Subject'] = 'KanBee — Подтверждение регистрации'
+    msg['From'] = f'KanBee <{SMTP_USER}>'
+    msg['To'] = to_email
+    try:
+        with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as smtp:
+            smtp.ehlo()
+            smtp.starttls()
+            smtp.login(SMTP_USER, _SMTP_PASSWORD)
+            smtp.sendmail(SMTP_USER, [to_email], msg.as_string())
+    except Exception as exc:
+        print(f'[EMAIL ERROR] {exc}')
+        raise HTTPException(500, 'err_email_send_failed')
 
 
 def _send_reset_email(to_email: str, code: str):
@@ -79,17 +107,42 @@ def _send_reset_email(to_email: str, code: str):
         raise HTTPException(500, 'err_email_send_failed')
 
 
-@router.post('/register', response_model=UserOut)
-def register(payload: UserRegister, request: Request, response: Response):
+@router.post('/register-request')
+def register_request(payload: UserRegister):
     _validate_email(payload.email)
     _validate_password(payload.password)
 
     if storage.get_user_by_email(payload.email):
         raise HTTPException(400, 'err_email_taken')
 
+    existing = storage.get_pending_registration(payload.email)
+    if existing:
+        age = (datetime.now(timezone.utc) - existing['created_at']).total_seconds()
+        if age < RESET_RATE_LIMIT_SECONDS:
+            raise HTTPException(429, 'err_reset_rate_limit')
+
     pw_hash = bcrypt.hashpw(payload.password.encode(), bcrypt.gensalt()).decode()
-    user = storage.create_user_with_email(payload.email, pw_hash)
-    storage.add_password_history(user['id'], _pw_history_hash(payload.password, user['id']))
+    code = f'{secrets.randbelow(1_000_000):06d}'
+    expires_at = datetime.now(timezone.utc) + timedelta(minutes=RESET_CODE_TTL_MINUTES)
+    storage.create_pending_registration(payload.email, pw_hash, code, expires_at)
+    _send_verification_email(payload.email, code)
+    return {'ok': True}
+
+
+@router.post('/register-confirm', response_model=UserOut)
+def register_confirm(payload: ConfirmRegistration, request: Request, response: Response):
+    pending = storage.get_pending_registration(payload.email)
+    if not pending:
+        raise HTTPException(400, 'err_invalid_code')
+    if pending['attempts'] >= MAX_RESET_ATTEMPTS:
+        raise HTTPException(400, 'err_code_attempts_exceeded')
+    if pending['code'] != payload.code:
+        storage.increment_pending_attempts(pending['id'])
+        raise HTTPException(400, 'err_invalid_code')
+
+    user = storage.create_user_with_email(payload.email, pending['password_hash'])
+    storage.add_password_history(user['id'], _pw_history_hash_from_stored(pending['password_hash'], user['id']))
+    storage.delete_pending_registration(payload.email)
 
     session_id = uuid4().hex
     storage.create_session(session_id, user['id'])

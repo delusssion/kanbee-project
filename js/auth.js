@@ -23,6 +23,15 @@ const AUTH_LANG = {
     'forgot':               'Забыл пароль',
     'left-tagline':         'Задачи под <em>контролем</em>',
     'left-sub':             'Канбан-доска и трекер задач для командной работы. Просто, быстро, красиво.',
+    'verify-eyebrow':       'Подтверждение',
+    'verify-heading':       'Введите код',
+    'verify-sent-to':       'Код отправлен на',
+    'verify-label':         'Код из письма',
+    'verify-ph':            '6-значный код',
+    'verify-btn':           'Подтвердить →',
+    'verify-resend':        'Выслать повторно',
+    'verify-resend-cd':     'Выслать повторно ({s}с)',
+    'err_verify_code':      'Введите 6-значный числовой код',
     'err_invalid_email':          'Некорректный email адрес',
     'err_email_taken':            'Этот email уже зарегистрирован',
     'err_wrong_credentials':      'Неверный email или пароль',
@@ -63,6 +72,15 @@ const AUTH_LANG = {
     'forgot':               'Forgot password',
     'left-tagline':         'Tasks under <em>control</em>',
     'left-sub':             'Kanban board and task tracker for team and personal use. Simple, fast, beautiful.',
+    'verify-eyebrow':       'Verification',
+    'verify-heading':       'Enter code',
+    'verify-sent-to':       'Code sent to',
+    'verify-label':         'Code from email',
+    'verify-ph':            '6-digit code',
+    'verify-btn':           'Confirm →',
+    'verify-resend':        'Resend code',
+    'verify-resend-cd':     'Resend ({s}s)',
+    'err_verify_code':      'Enter a 6-digit numeric code',
     'err_invalid_email':          'Invalid email address',
     'err_email_taken':            'This email is already registered',
     'err_wrong_credentials':      'Invalid email or password',
@@ -105,8 +123,8 @@ function tAErr(err) {
 function bindPasswordToggles() {
   const eyeOpen = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
   const eyeOff  = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
-  document.querySelectorAll('input[type="password"]').forEach(input => {
-    if (input.parentNode.classList.contains('pwd-wrap')) return;
+  document.querySelectorAll('input[type="password"]:not(.pwd-toggle-bound)').forEach(input => {
+    input.classList.add('pwd-toggle-bound');
     const wrap = document.createElement('div');
     wrap.className = 'pwd-wrap';
     input.parentNode.insertBefore(wrap, input);
@@ -190,6 +208,21 @@ function applyAuthLang(currentMode) {
     btn.classList.toggle('active', btn.id === `auth-lang-${authLang}`);
   });
 
+  const vEyebrow = document.getElementById('auth-verify-eyebrow');
+  const vHeading = document.getElementById('auth-verify-heading');
+  const vSentTo  = document.getElementById('auth-verify-sent-label');
+  const vLabel   = document.getElementById('auth-verify-label');
+  const vCode    = document.getElementById('auth-verify-code');
+  const vBtn     = document.getElementById('auth-verify-btn');
+  const vResend  = document.getElementById('auth-verify-resend');
+  if (vEyebrow) vEyebrow.textContent   = tA('verify-eyebrow');
+  if (vHeading) vHeading.textContent   = tA('verify-heading');
+  if (vSentTo)  vSentTo.textContent    = tA('verify-sent-to');
+  if (vLabel)   vLabel.textContent     = tA('verify-label');
+  if (vCode)    vCode.placeholder      = tA('verify-ph');
+  if (vBtn)     vBtn.textContent       = tA('verify-btn');
+  if (vResend && !vResend.disabled) vResend.textContent = tA('verify-resend');
+
   if (currentMode) {
     const isReg = currentMode === 'register';
     const eyebrow     = document.getElementById('auth-eyebrow');
@@ -225,9 +258,21 @@ document.addEventListener('DOMContentLoaded', async () => {
   const forgotWrap  = document.getElementById('auth-forgot-wrap');
 
   let mode = 'login';
+  let pendingEmail = '';
+  let pendingPassword = '';
+  let verifyResendTimer = null;
 
   function setMode(m) {
     mode = m;
+    // Reset verify step if it's showing
+    const vw = document.getElementById('auth-verify-wrap');
+    if (vw && vw.style.display !== 'none') {
+      vw.style.display = 'none';
+      document.getElementById('auth-eyebrow').style.display = '';
+      document.getElementById('auth-form-heading').style.display = '';
+      document.querySelectorAll('.auth-form-sub').forEach(el => { el.style.display = ''; });
+      form.style.display = '';
+    }
     const isReg = m === 'register';
     confirmWrap.style.display = isReg ? '' : 'none';
     confirmEl.required        = isReg;
@@ -282,13 +327,92 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     submitBtn.disabled = true;
+    if (mode === 'login') {
+      try {
+        await api('POST', '/auth/login', { email, password });
+        window.location.replace('/board');
+      } catch (err) {
+        errorEl.textContent = tAErr(err);
+        submitBtn.disabled = false;
+      }
+    } else {
+      try {
+        await api('POST', '/auth/register-request', { email, password });
+        pendingEmail    = email;
+        pendingPassword = password;
+        showVerifyStep(email);
+        submitBtn.disabled = false;
+      } catch (err) {
+        errorEl.textContent = tAErr(err);
+        submitBtn.disabled = false;
+      }
+    }
+  });
+
+  // ── Verify step ────────────────────────────────────────────────────
+  const verifyWrap    = document.getElementById('auth-verify-wrap');
+  const verifyCodeEl  = document.getElementById('auth-verify-code');
+  const verifyErrorEl = document.getElementById('auth-verify-error');
+  const verifyBtn     = document.getElementById('auth-verify-btn');
+  const verifyResend  = document.getElementById('auth-verify-resend');
+  const verifyEmailEl = document.getElementById('auth-verify-email');
+
+  function showVerifyStep(email) {
+    document.getElementById('auth-eyebrow').style.display = 'none';
+    document.getElementById('auth-form-heading').style.display = 'none';
+    document.querySelectorAll('.auth-form-sub').forEach(el => { el.style.display = 'none'; });
+    form.style.display = 'none';
+    verifyEmailEl.textContent = email;
+    verifyCodeEl.value = '';
+    verifyErrorEl.textContent = '';
+    applyAuthLang(null);
+    verifyWrap.style.display = '';
+    verifyCodeEl.focus();
+  }
+
+  verifyCodeEl.addEventListener('input', () => {
+    verifyCodeEl.value = verifyCodeEl.value.replace(/\D/g, '').slice(0, 6);
+  });
+
+  async function doVerify() {
+    verifyErrorEl.textContent = '';
+    const code = verifyCodeEl.value.trim();
+    if (!/^\d{6}$/.test(code)) { verifyErrorEl.textContent = tA('err_verify_code'); return; }
+    verifyBtn.disabled = true;
     try {
-      const path = mode === 'login' ? '/auth/login' : '/auth/register';
-      await api('POST', path, { email, password });
+      await api('POST', '/auth/register-confirm', { email: pendingEmail, code });
       window.location.replace('/board');
     } catch (err) {
-      errorEl.textContent = tAErr(err);
-      submitBtn.disabled = false;
+      verifyErrorEl.textContent = tAErr(err);
+      verifyBtn.disabled = false;
     }
+  }
+
+  verifyBtn.addEventListener('click', doVerify);
+  verifyCodeEl.addEventListener('keydown', e => { if (e.key === 'Enter') doVerify(); });
+
+  verifyResend.addEventListener('click', async () => {
+    if (verifyResendTimer) return;
+    verifyErrorEl.textContent = '';
+    verifyResend.disabled = true;
+    try {
+      await api('POST', '/auth/register-request', { email: pendingEmail, password: pendingPassword });
+      verifyCodeEl.value = '';
+    } catch (err) {
+      verifyErrorEl.textContent = tAErr(err);
+    }
+    let secs = 120;
+    verifyResend.textContent = tA('verify-resend-cd').replace('{s}', secs);
+    verifyResendTimer = setInterval(() => {
+      secs--;
+      if (secs <= 0) {
+        clearInterval(verifyResendTimer);
+        verifyResendTimer = null;
+        verifyResend.disabled = false;
+        verifyResend.textContent = tA('verify-resend');
+      } else {
+        verifyResend.textContent = tA('verify-resend-cd').replace('{s}', secs);
+      }
+    }, 1000);
   });
 });

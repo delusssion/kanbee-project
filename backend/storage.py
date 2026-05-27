@@ -79,7 +79,7 @@ def init_db():
                 CREATE TABLE IF NOT EXISTS user_settings (
                     user_id      TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
                     lang         TEXT NOT NULL DEFAULT 'en',
-                    theme        TEXT NOT NULL DEFAULT 'dark',
+                    theme        TEXT NOT NULL DEFAULT 'light',
                     default_view TEXT NOT NULL DEFAULT 'kanban'
                 )
             """)
@@ -108,6 +108,17 @@ def init_db():
             cur.execute("""
                 ALTER TABLE password_reset_codes ADD COLUMN IF NOT EXISTS
                     attempts INT NOT NULL DEFAULT 0
+            """)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS pending_registrations (
+                    id            TEXT PRIMARY KEY,
+                    email         TEXT NOT NULL UNIQUE,
+                    password_hash TEXT NOT NULL,
+                    code          TEXT NOT NULL,
+                    expires_at    TIMESTAMPTZ NOT NULL,
+                    attempts      INT NOT NULL DEFAULT 0,
+                    created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                )
             """)
     _migrate_orphan_tasks()
 
@@ -462,6 +473,49 @@ def mark_reset_code_used(code_id: str):
     with _conn() as conn:
         with conn.cursor() as cur:
             cur.execute('UPDATE password_reset_codes SET used = TRUE WHERE id = %s', (code_id,))
+
+
+# ── Pending registrations ──────────────────────────────────────────
+
+def create_pending_registration(email: str, password_hash: str, code: str, expires_at) -> str:
+    pending_id = uuid4().hex
+    with _conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute('DELETE FROM pending_registrations WHERE email = %s', (email,))
+            cur.execute(
+                'INSERT INTO pending_registrations (id, email, password_hash, code, expires_at)'
+                ' VALUES (%s, %s, %s, %s, %s)',
+                (pending_id, email, password_hash, code, expires_at),
+            )
+    return pending_id
+
+
+def get_pending_registration(email: str) -> Optional[dict]:
+    with _conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                'SELECT * FROM pending_registrations WHERE email = %s AND expires_at > NOW()',
+                (email,),
+            )
+            row = cur.fetchone()
+    return dict(row) if row else None
+
+
+def increment_pending_attempts(pending_id: str) -> int:
+    with _conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                'UPDATE pending_registrations SET attempts = attempts + 1 WHERE id = %s RETURNING attempts',
+                (pending_id,),
+            )
+            row = cur.fetchone()
+    return row[0] if row else 0
+
+
+def delete_pending_registration(email: str):
+    with _conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute('DELETE FROM pending_registrations WHERE email = %s', (email,))
 
 
 # ── Password history ───────────────────────────────────────────────
