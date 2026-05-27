@@ -3,7 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>KanBee — Войти</title>
+  <title>KanBee — Таск-трекер и канбан-доска</title>
+  <meta name="description" content="Канбан-доска и трекер задач для командной и личной работы. Просто, быстро, красиво." />
+  <link rel="icon" type="image/png" href="/img/logo-light.png" />
   <link rel="stylesheet" href="css/styles.css?v=9" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
@@ -23,15 +25,8 @@
           <img class="logo-img logo-img-dark"  src="img/logo-dark.png"  alt="KanBee" />
         </div>
 
-        <h1 class="auth-tagline">Задачи под<br/><em>контролем</em></h1>
-        <p class="auth-tagline-sub">Канбан-доска и трекер задач для командной работы. Просто, быстро, красиво.</p>
-
-        <div class="auth-features">
-          <div class="auth-feat-pill"><span class="auth-feat-dot"></span>Drag &amp; drop</div>
-          <div class="auth-feat-pill"><span class="auth-feat-dot"></span>EN / RU</div>
-          <div class="auth-feat-pill"><span class="auth-feat-dot"></span>Тёмная тема</div>
-          <div class="auth-feat-pill"><span class="auth-feat-dot"></span>Приоритеты</div>
-        </div>
+        <h1 class="auth-tagline" id="auth-left-tagline">Задачи под <em>контролем</em></h1>
+        <p class="auth-tagline-sub" id="auth-left-sub">Канбан-доска и трекер задач для командной работы. Просто, быстро, красиво.</p>
       </div>
 
       <!-- Board illustration -->
@@ -117,17 +112,17 @@
 
         <form id="auth-form">
           <div class="auth-field">
-            <label class="auth-field-label">Email</label>
+            <label class="auth-field-label" id="auth-label-email">Email</label>
             <input class="auth-field-input" id="auth-email" type="email"
               placeholder="Ваш email" autocomplete="email" required />
           </div>
           <div class="auth-field">
-            <label class="auth-field-label">Пароль</label>
+            <label class="auth-field-label" id="auth-label-password">Пароль</label>
             <input class="auth-field-input" id="auth-password" type="password"
               placeholder="Введите пароль" autocomplete="current-password" required />
           </div>
           <div class="auth-field" id="auth-confirm-wrap" style="display:none">
-            <label class="auth-field-label">Подтвердить пароль</label>
+            <label class="auth-field-label" id="auth-label-confirm">Подтвердить пароль</label>
             <input class="auth-field-input" id="auth-confirm" type="password"
               placeholder="Повторите пароль" />
           </div>
@@ -138,6 +133,13 @@
           </p>
         </form>
 
+      </div>
+
+      <!-- Language switcher -->
+      <div class="auth-lang-bar">
+        <button class="auth-lang-btn" id="auth-lang-ru">RU</button>
+        <span class="auth-lang-sep">|</span>
+        <button class="auth-lang-btn" id="auth-lang-en">EN</button>
       </div>
     </div>
 
